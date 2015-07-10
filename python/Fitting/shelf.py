@@ -6,6 +6,7 @@ import math
 import os
 
 from scipy import optimize, integrate
+import scipy.stats
 import numpy as np
 import matplotlib
 
@@ -585,6 +586,7 @@ class Shelf:
         ne_error = np.zeros(NT)
         Te_error = np.zeros(NT)
         chisq = np.zeros(NT)
+        p = np.zeros(NT)
 
         # KILL THE NEGATIVE PHOTONS!!!
         # if a measurement has a negative number of photons,
@@ -605,67 +607,53 @@ class Shelf:
             Nsc_error *= self.fcor[0]
 
         # total pos is the array of possible indices, (0,1,2,3) for phase 3 or (0,1,2,3,4,5) if not
-        # mask_pos contains the (boolean) mask of the indices used in each time step
-        total_pos = np.arange(ND)
+        total_detectors = np.arange(ND)
 
+        # mask_pos contains the (boolean) mask of the indices used in each time step
         # The mask very much effects the result that is given by the least squares routine.
         # If the mask is set to Nsc >= 0, very wild results can occur, such as temp = 5000 keV.
         # Small negative numbers (such as >= -40) are acceptable, as long as Nsc + Nsc_error >= 0
         # The negative numbers are accounted for by the error bars one standard deviation up
 
-        # mask_raw is the raw values, mask_error is if the value + error are greater than 0
-        # mask_raw = self.Nsc >= -45
-        # mask_error = (self.Nsc + self.Nsc_error) >= 0
-        # mask_pos = np.logical_and(mask_raw, mask_error)
-        mask_pos = np.array([True for i in range(ND)])
+
+        masked_detectors = np.array([True for i in range(ND)])
         if self.phase != "3":
-            mask_pos[2] = False
+            masked_detectors[2] = False
 
         # initial guesses
-        a0 = self.param_guess(Nsc)
+        guesses = self.param_guess(Nsc)
 
         # pdb.set_trace()
         for i in range(NT):
-            # if i==39: pdb.set_trace()
             # iterate over time index
             # i'm sure there is a more efficient and pythonic way to do this
 
-            # find what indices/data points are involved in the calculation
-            # pos = total_pos[mask_pos[:, i]]
+            detector_indexes = total_detectors[masked_detectors]
 
-            # let's try out what happens when negative photons are included
-            # might result in no minimization though
-            pos = total_pos[mask_pos]
-
-            y = Nsc[pos, i]
-            dy = Nsc_error[pos, i]
-            a = a0[i]
-            # w = 1/(dy**2)
+            y = Nsc[detector_indexes, i]
+            dy = Nsc_error[detector_indexes, i]
 
             # perform the first curve fit to get a more accurate Te estimate
-            afit, acov = optimize.curve_fit(self.photon_calc, xdata=pos, ydata=y, p0=a0[i], sigma=dy)
+            afit, acov = optimize.curve_fit(self.photon_calc, xdata=detector_indexes, ydata=y, p0=guesses[i], sigma=dy)
 
-            ne1 = afit[0]
-            Te1 = afit[1]
-            if Te1 < 1e-4:
-                Te1 = 1e-4
+            secondguess = [afit[0], afit[1] if afit[1] > 1e-4 else 1e-4]
+            frac_error = self.fractional_error(afit[1], detector_indexes)
 
-            a1 = [ne1, Te1]
-            frac_error = self.fractional_error(Te1, pos)
-
-            dy1 = np.abs(y) * np.sqrt((dy / y) ** 2 + frac_error ** 2)
+            second_dy = np.abs(y) * np.sqrt((dy / y) ** 2 + frac_error ** 2)
             # w1 = 1/(dy**2)
 
             # feed the new weights and previously found values into a second round of fitting
             # , Dfun = self.photon_jacobian
-            afit, acov = optimize.curve_fit(self.photon_calc, xdata=pos, ydata=y, p0=a1, sigma=dy1)
+            afit, acov = optimize.curve_fit(self.photon_calc, xdata=detector_indexes, ydata=y, p0=secondguess,
+                                            sigma=second_dy)
 
             ne[i] = afit[0]
             Te[i] = afit[1]
 
             # find the reduced chi squared. The degrees of freedom is N-2
-            yfit = self.photon_calc(pos, afit[0], afit[1])
-            chisq[i] = np.sum(((yfit - y) / dy1) ** 2) / (pos.shape[0] - 2)
+            yfit = self.photon_calc(detector_indexes, afit[0], afit[1])
+            # chisq[i] = np.sum(((yfit - y) / second_dy) ** 2) / (time_indexes.shape[0] - 2)
+            chisq[i], p[i] = scipy.stats.chisquare(y, yfit, detector_indexes.shape[0] - 2)
 
             # if type(acov) == float:
             # pdb.set_trace()
@@ -676,7 +664,7 @@ class Shelf:
             ne_error[i] = np.sqrt(ne_cov)
             Te_error[i] = np.sqrt(Te_cov)
 
-            # print i, a0[i][1], Te1, afit[1]
+            # print i, guesses[i][1], Te1, afit[1]
 
 
         # done with fitting, now do calculations and export the data to self (class attributes)
