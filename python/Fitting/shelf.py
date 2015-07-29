@@ -569,6 +569,44 @@ class Shelf:
 
         return Sc
 
+    def ts_spectra_alt(self, Te):
+        """evaluates the selden formula without integrating or adding in qt and qt_fiber"""
+        llaser = 10640  # laser wavelength in angstroms
+        x = self.qt_wave_div / llaser - 1
+        # x= wavelength (scattered) over wavelength(incidental) - 1
+        ct = math.cos(self.scat_angle * math.pi / 180.0)
+
+        alpha = 255.5 / Te  # (255.5 keV. boltzmann constant is ignored since Te is in units of keV)
+        A = (1 + x) ** 2 * np.sqrt(2 * (1 - ct) * (1 + x) + x ** 2)
+        B = np.sqrt(1 + x ** 2 / (2 * (1 - ct) * (1 + x))) - 1
+        C = math.sqrt(alpha / math.pi) * (1 - 15.0 / (16.0 * alpha) + 345.0 / (512.0 * alpha ** 2))
+
+        Sc = (C * np.exp(-2 * alpha * B)) / A
+
+        # Sc2 = C/(A * np.exp(-2 * alpha * B))
+
+        return Sc
+
+    def ts_spectra_alt_param(self, Te, qt, scat_angle):
+        """evaluates the selden formula without integrating or adding in qt and qt_fiber"""
+        # nstxusr/user/mpts/source/tsspect.pro
+        # plotts_time, 139047, rads=[0,1,2,3,4,5], /nb
+        llaser = 10640  # laser wavelength in angstroms
+        x = qt / llaser - 1
+        ct = math.cos(scat_angle * math.pi / 180.0)
+
+        alpha = 255.5 / Te  # (255.5 keV. boltzmann constant is ignored since Te is in units of keV)
+        A = (1 + x) ** 2 * np.sqrt(2 * (1 - ct) * (1 + x) + x ** 2)
+        B = np.sqrt(1 + x ** 2 / (2 * (1 - ct) * (1 + x))) - 1
+        C = math.sqrt(alpha / math.pi) * (1 - 15.0 / (16.0 * alpha) + 345.0 / (512.0 * alpha ** 2))
+
+        Sc = (C * np.exp(-2 * alpha * B)) / A
+
+        Sc2 = C/(A * np.exp(-2 * alpha * B))
+
+        return Sc2
+
+
     # fitting routines start here!
     # IMPORTANT!
     #  ne is not the electron density, but instead is the density * a collection of constants
@@ -641,19 +679,19 @@ class Shelf:
 
             second_dy = np.abs(y) * np.sqrt((dy / y) ** 2 + frac_error ** 2)
             # w1 = 1/(dy**2)
-
+            #
             # feed the new weights and previously found values into a second round of fitting
             # , Dfun = self.photon_jacobian
             afit, acov = optimize.curve_fit(self.photon_calc, xdata=detector_indexes, ydata=y, p0=secondguess,
-                                            sigma=second_dy)
+                                             sigma=second_dy)
 
             ne[i] = afit[0]
             Te[i] = afit[1]
 
             # find the reduced chi squared. The degrees of freedom is N-2
             yfit = self.photon_calc(detector_indexes, afit[0], afit[1])
-            # chisq[i] = np.sum(((yfit - y) / second_dy) ** 2) / (time_indexes.shape[0] - 2)
-            chisq[i], p[i] = scipy.stats.chisquare(y, yfit, detector_indexes.shape[0] - 2)
+
+            chisq[i] = np.sum(((yfit - y) / second_dy) ** 2) / (detector_indexes.shape[0] - 2)
 
             # if type(acov) == float:
             # pdb.set_trace()
