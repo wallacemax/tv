@@ -25,8 +25,8 @@ import ctypes
 defaultdpi = 100
 radialgraphwidth = 5
 radialgraphratio = 1.2
-timegraphwidth = 5
-timegraphratio = .6
+timegraphwidth = 6
+timegraphratio = 1
 audittextsize=6
 
 treename = 'nstx'
@@ -136,36 +136,30 @@ class tvMain:
 
     def drawTimeGraphs(self):
 
-        audittextsize=6
-        timeFrame = tk.Frame(self.master, bd=0)
-        timeFrame.grid(row=2, column=1)
-
         cplasma = self.MDS_data['CPLASMA']
         wmhd = self.MDS_data['WMHD']
 
         self.figure_a = Figure(figsize=(timegraphwidth,
                                         timegraphwidth * timegraphratio), dpi=defaultdpi, facecolor='white')
-        ax_a = self.figure_a.add_subplot(111)
+        ax_a = self.figure_a.add_subplot(2, 1, 1)
         ax_a.set_xlabel('Time (ms)')
         ax_a.set_ylabel(self.MDS_data_ylabel['CPLASMA'])
         ax_a.ticklabel_format(axis='y', style='sci', scilimits=(-2,2))
-        self.figure_a.suptitle(self.MDS_data_titles['CPLASMA'])
+        ax_a.set_title(self.MDS_data_titles['CPLASMA'])
         self.fig_a, = ax_a.plot(cplasma)
-        self.canvas_a = FigureCanvasTkAgg(self.figure_a, master=timeFrame)
-        self.canvas_a.show()
-        self.canvas_a.get_tk_widget().grid(row=0, column=0)
 
-        self.figure_b = Figure(figsize=(timegraphwidth,
-                                        timegraphwidth * timegraphratio), dpi=defaultdpi, facecolor='white')
-        ax_b = self.figure_b.add_subplot(111)
+        ax_b = self.figure_a.add_subplot(2, 1, 2)
         ax_b.set_xlabel('Time (ms)')
         ax_b.set_ylabel(self.MDS_data_ylabel['WMHD'])
         ax_b.ticklabel_format(axis='y', style='sci', scilimits=(-2,2))
-        self.figure_b.suptitle(self.MDS_data_titles['WMHD'])
+        ax_b.set_title(self.MDS_data_titles['WMHD'])
         self.fig_b, = ax_b.plot(wmhd)
-        self.canvas_b = FigureCanvasTkAgg(self.figure_b, master=timeFrame)
-        self.canvas_b.show()
-        self.canvas_b.get_tk_widget().grid(row=1, column=0)
+
+        self.figure_a.subplots_adjust(hspace=.7, bottom=0.13)
+
+        self.canvas_a = FigureCanvasTkAgg(self.figure_a, master=self.master)
+        self.canvas_a.show()
+        self.canvas_a.get_tk_widget().grid(row=2, column=1, sticky=tk.N)
 
     def drawShotHeader(self):
         # setup shot frame
@@ -317,10 +311,11 @@ class tvMain:
 def main():
     root = tk.Tk()
     root.wm_title("Thomson Visualization")
-    root.geometry('{}x{}'.format(1024, 768))
+    root.geometry('{}x{}'.format(1200, 768))
     root["bg"] = "white"
     root.grid_columnconfigure(0, uniform="also", minsize=512)
     root.grid_columnconfigure(1, uniform="also")
+
     root["bd"] = 0
     app = tvMain(root)
 
