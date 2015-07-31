@@ -27,6 +27,7 @@ radialgraphwidth = 5
 radialgraphratio = 1.2
 timegraphwidth = 5
 timegraphratio = .6
+audittextsize=6
 
 treename = 'nstx'
 userid = os.getenv('LOGNAME')
@@ -64,6 +65,12 @@ class tvMain:
                                 'CPLASMA': 'Plasma Current',
                                 'WMHD': 'Stored Energy'}
 
+        self.MDS_data_ylabel = {'FIT_NE': '1/cm^3',
+                                'FIT_PE': 'Pa',
+                                'FIT_TE': 'eV',
+                                'CPLASMA': 'Ampere (A)',
+                                'WMHD': 'Joule (J)'}
+
         self.update_text.set('Please input shot number for visualization.')
 
     def InitUI(self):
@@ -77,8 +84,8 @@ class tvMain:
         btnEPS.grid(row=3, column=0, sticky=tk.W)
         btnPNG = tk.Button(text="Print PNG", command=lambda: self.export_graphs(self.txtShotNumber.get(), 'PNG'))
         btnPNG.grid(row=3, column=0)
-        self.include_csv = tk.IntVar()
-        self.chkCSV = tk.Checkbutton(text="Save CSV", variable=include_csv)
+        self.include_csv = tk.BooleanVar()
+        self.chkCSV = tk.Checkbutton(text="Save CSV", variable=self.include_csv)
         self.chkCSV.grid(row=3, column=0, sticky=tk.E)
 
     def drawGraphs(self):
@@ -108,17 +115,17 @@ class tvMain:
         self.ax1 = plt.subplot(3, 1, 1)
         self.ax1.plot(ne[framenumber])
         self.ax1.set_title(self.MDS_data_titles['FIT_NE'])
-        self.ax1.set_ylabel('eV?')
+        self.ax1.set_ylabel(self.MDS_data_ylabel['FIT_NE'])
 
         self.ax2 = plt.subplot(3, 1, 2)
         self.ax2.plot(te[framenumber])
         self.ax2.set_title(self.MDS_data_titles['FIT_TE'])
-        self.ax2.set_ylabel('eV?')
+        self.ax2.set_ylabel(self.MDS_data_ylabel['FIT_TE'])
 
         self.ax3 = plt.subplot(3, 1, 3)
         self.ax3.plot(pe[framenumber])
         self.ax3.set_title(self.MDS_data_titles['FIT_PE'])
-        self.ax3.set_ylabel('eV?')
+        self.ax3.set_ylabel(self.MDS_data_ylabel['FIT_PE'])
 
         self.ax3.set_xlabel('Radial Profile')
         self.figure_1.subplots_adjust(hspace=1)
@@ -129,6 +136,7 @@ class tvMain:
 
     def drawTimeGraphs(self):
 
+        audittextsize=6
         timeFrame = tk.Frame(self.master, bd=0)
         timeFrame.grid(row=2, column=1)
 
@@ -139,7 +147,8 @@ class tvMain:
                                         timegraphwidth * timegraphratio), dpi=defaultdpi, facecolor='white')
         ax_a = self.figure_a.add_subplot(111)
         ax_a.set_xlabel('Time (ms)')
-        ax_a.set_ylabel('eV ?')
+        ax_a.set_ylabel(self.MDS_data_ylabel['CPLASMA'])
+        ax_a.ticklabel_format(axis='y', style='sci', scilimits=(-2,2))
         self.figure_a.suptitle(self.MDS_data_titles['CPLASMA'])
         self.fig_a, = ax_a.plot(cplasma)
         self.canvas_a = FigureCanvasTkAgg(self.figure_a, master=timeFrame)
@@ -150,7 +159,8 @@ class tvMain:
                                         timegraphwidth * timegraphratio), dpi=defaultdpi, facecolor='white')
         ax_b = self.figure_b.add_subplot(111)
         ax_b.set_xlabel('Time (ms)')
-        ax_b.set_ylabel('eV ?')
+        ax_b.set_ylabel(self.MDS_data_ylabel['WMHD'])
+        ax_b.ticklabel_format(axis='y', style='sci', scilimits=(-2,2))
         self.figure_b.suptitle(self.MDS_data_titles['WMHD'])
         self.fig_b, = ax_b.plot(wmhd)
         self.canvas_b = FigureCanvasTkAgg(self.figure_b, master=timeFrame)
@@ -202,6 +212,8 @@ class tvMain:
         for graphName in {'figure_a', 'figure_b', 'figure_1'}:
             graph = getattr(self, graphName)
 
+            self.add_graph_thumbprint(graph)
+
             try:
                 graphTitle = graph._suptitle._text
             except AttributeError:
@@ -216,6 +228,17 @@ class tvMain:
 
         self.update_text.set(updatestring)
 
+    def add_graph_thumbprint(self, graph):
+
+        thumbprinttext = userid + ' ' + self.txtShotNumber.get()
+
+        graph.text(.95,.85, thumbprinttext,
+                   horizontalalignment='right',
+                   verticalalignment='center',
+                   rotation='vertical',
+                   transform=graph.transFigure,
+                   fontsize=audittextsize)
+
     def export_csv_data(self, fileName, file_type, graph, graphTitle):
         if graphTitle == 'ThomsonData':
             self.export_thomson_csv_data(fileName, file_type)
@@ -227,7 +250,7 @@ class tvMain:
         np.savetxt(fileName.replace(file_type, 'csv'), line, delimiter=',')
 
     def export_thomson_csv_data(self, fileName, file_type):
-        for i in range(1, 3):
+        for i in range(1, 4):
             sub = getattr(self, 'ax' + str(i))
             datacaption = sub.get_title()
             graphdata = self.get_graph_data(datacaption, self.framenumber)
