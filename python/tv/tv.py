@@ -1,6 +1,11 @@
 __author__ = 'maxwallace'
 import sys
-import tkinter as tk
+try:
+    # for Python2
+    import Tkinter as tk
+except ImportError:
+    # for Python3
+    import tkinter as tk
 import os
 import datetime
 
@@ -10,6 +15,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
+from matplotlib.widgets import Cursor #multicursor?
 
 from time import strftime
 
@@ -65,6 +71,12 @@ class tvMain:
                                 'CPLASMA': 'Plasma Current',
                                 'WMHD': 'Stored Energy'}
 
+        # change FIT_NE to m^-1
+        # change TE to keV
+        # change FIT_PE to kPa
+        # change CPLASMA to MA (10^6)
+        # change Thomson line to points
+        # floor stored energy at 0
         self.MDS_data_ylabel = {'FIT_NE': '1/cm^3',
                                 'FIT_PE': 'Pa',
                                 'FIT_TE': 'eV',
@@ -127,7 +139,7 @@ class tvMain:
         self.ax3.set_title(self.MDS_data_titles['FIT_PE'])
         self.ax3.set_ylabel(self.MDS_data_ylabel['FIT_PE'])
 
-        self.ax3.set_xlabel('Radial Profile')
+        self.ax3.set_xlabel('Major Radius (cm) ')
         self.figure_1.subplots_adjust(hspace=1)
 
         self.canvas_1 = FigureCanvasTkAgg(self.figure_1, master=radialFrame)
@@ -197,21 +209,30 @@ class tvMain:
         timestamp = datetime.datetime.isoformat(
             datetime.datetime.today()).split('.')[0].replace('-', '').replace(':', '')
 
-        updatestring = 'Images for {} saved in {} format'.format(shotid,
-                            file_type + ' and CSV' if self.include_csv.get() else file_type)
+        bar = ''
+        if self.include_csv.get():
+            bar = (file_type + ' and CSV')
+        else:
+            bar = file_type
+
+        updatestring = 'Images for {} saved in {} format'.format(shotid, bar)
+
 
         if not os.path.exists(shotnumber):
             os.makedirs(shotnumber)
 
-        for graphName in {'figure_a', 'figure_b', 'figure_1'}:
+        baz = ['figure_a', 'figure_1']
+
+        for graphName in baz:
             graph = getattr(self, graphName)
 
             self.add_graph_thumbprint(graph)
 
-            try:
-                graphTitle = graph._suptitle._text
-            except AttributeError:
+            graphTitle = ''
+            if '_1' in graphName:
                 graphTitle = 'ThomsonData'
+            else:
+                graphTitle = 'TimeData'
 
             fileName = '{}/{}_{}_{}.{}'.format(shotnumber, shotnumber, graphTitle, timestamp,
                                                file_type).replace(' ', '')

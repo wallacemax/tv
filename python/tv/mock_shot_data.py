@@ -1,6 +1,7 @@
 __author__ = 'maxwallace'
 import pickle
 import sys
+import pdb
 
 class mock_shot_data:  ### (1)
     def __init__(self, treename, shotid):
@@ -10,20 +11,13 @@ class mock_shot_data:  ### (1)
 
     def get_tree_data(self, nodeid):
 
-        foo = []
+        foo = self.get_pickled(nodeid.replace('\\', ''))
 
-        if 'CPASMA' in nodeid:
-            foo = self.get_pickled('CPLASMA')
-        elif 'WMHD' in nodeid:
-            foo = self.get_pickled('WMHD')
-        else:
-            foo = self.get_pickled(str(nodeid[-2:]).lower() + '_fit')
-
-        return foo
+        return foo[0], foo[1], foo[2], foo[3]
 
     def get_pickled(self, var):
         file = open(var + '.pk', 'rb')
-        data = pickle.load(file, encoding='latin1')
+        data = pickle.load(file)
         file.close()
         return data
 
@@ -31,21 +25,13 @@ class mock_shot_data:  ### (1)
         return shotid == 130000
 
     def test(self):
-        print('init')
         foo = mock_shot_data('nstx', 130000)
-        print('try getting Ne')
-        print(foo.get_tree_data('\ACTIVESPEC::TOP.MPTS.OUTPUT_DATA.BEST:FIT_NE'))
-        print('try getting Pe')
-        print(foo.get_tree_data('\ACTIVESPEC::TOP.MPTS.OUTPUT_DATA.BEST:FIT_PE'))
-        print('try getting Te')
-        print(foo.get_tree_data('\ACTIVESPEC::TOP.MPTS.OUTPUT_DATA.BEST:FIT_TE'))
-        print('try switching to EFIT01 tree')
-        foo = mock_shot_data('EFIT01', 130000)
-        print('try getting plasma current')
-        print(foo.get_tree_data('\EFIT01::TOP.RESULTS.GEQDSK:CPASMA'))
-        print('try getting stored energy')
-        print(foo.get_tree_data('\EFIT01::TOP.RESULTS.AEQDSK:WMHD'))
-        print('yay!')
+        current = foo.get_tree_data('\\ip')
+        stored_energy = foo.get_tree_data('\\WMHD')
+        nef = foo.get_tree_data('\\NEF')
+        pef = foo.get_tree_data('\\PEF')
+        tef = foo.get_tree_data('\\TEF')
+        pdb.set_trace()
 
 if __name__ == '__main__':
     foo = mock_shot_data('nstx', 130000)
