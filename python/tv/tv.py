@@ -11,6 +11,7 @@ import datetime
 
 import matplotlib
 import matplotlib.pyplot as plt
+from pylab import *
 
 import numpy as np
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
@@ -29,8 +30,8 @@ except ImportError:
 import ctypes
 
 defaultdpi = 100
-radialgraphwidth = 5
-radialgraphratio = 1.2
+radialgraphwidth = 6.5
+radialgraphratio = 1
 timegraphwidth = 6
 timegraphratio = 1
 audittextsize=6
@@ -53,17 +54,17 @@ class tvMain:
 
         self.InitUI()
 
-        self.MDS_data_nodes = {'FIT_NE': '\ACTIVESPEC::TOP.MPTS.OUTPUT_DATA.BEST:FIT_NE',
-                               'FIT_PE': '\ACTIVESPEC::TOP.MPTS.OUTPUT_DATA.BEST:FIT_PE',
-                               'FIT_TE': '\ACTIVESPEC::TOP.MPTS.OUTPUT_DATA.BEST:FIT_TE',
-                               'CPLASMA': '\EFIT01::TOP.RESULTS.GEQDSK:CPASMA',
-                               'WMHD': '\EFIT01::TOP.RESULTS.AEQDSK:WMHD'}
+        self.MDS_data_nodes = {'FIT_NE': '\\NEF',
+                               'FIT_PE': '\\PEF',
+                               'FIT_TE': '\\TEF',
+                               'CPLASMA': '\\IP',
+                               'WMHD': '\\EFIT01::WMHD'}
 
-        self.MDS_data = {'FIT_NE': [],
-                         'FIT_PE': [],
-                         'FIT_TE': [],
-                         'CPLASMA': [],
-                         'WMHD': []}
+        self.MDS_data = {'FIT_NE': Ellipsis,
+                         'FIT_PE': Ellipsis,
+                         'FIT_TE': Ellipsis,
+                         'CPLASMA': Ellipsis,
+                         'WMHD': Ellipsis}
 
         self.MDS_data_titles = {'FIT_NE': 'Density (Ne)',
                                 'FIT_PE': 'Pressure (Pe)',
@@ -71,23 +72,11 @@ class tvMain:
                                 'CPLASMA': 'Plasma Current',
                                 'WMHD': 'Stored Energy'}
 
-        # change FIT_NE to m^-1
-        # change TE to keV
-        # change FIT_PE to kPa
-        # change CPLASMA to MA (10^6)
-        # change Thomson line to points
-        # floor stored energy at 0
-        self.MDS_data_ylabel = {'FIT_NE': '1/cm^3',
-                                'FIT_PE': 'Pa',
-                                'FIT_TE': 'eV',
-                                'CPLASMA': 'Ampere (A)',
-                                'WMHD': 'Joule (J)'}
-
         self.update_text.set('Please input shot number for visualization.')
 
     def InitUI(self):
         self.drawShotHeader()
-        # self.drawGraphs()
+
         self.drawFooter()
 
     def drawFooter(self):
@@ -100,78 +89,8 @@ class tvMain:
         self.chkCSV = tk.Checkbutton(text="Save CSV", variable=self.include_csv)
         self.chkCSV.grid(row=3, column=0, sticky=tk.E)
 
-    def drawGraphs(self):
-        # graph
-        self.drawRadialGraphs()
-        self.drawTimeGraphs()
-
-    def drawRadialGraphs(self, framenumber=0):
-
-        self.framenumber = framenumber
-
-        radialFrame = tk.Frame(self.master)
-        radialFrame.grid(row=2, column=0)
-
-        ne = self.MDS_data['FIT_NE']
-        te = self.MDS_data['FIT_TE']
-        pe = self.MDS_data['FIT_PE']
-
-        self.figure_1 = plt.figure(figsize=(radialgraphwidth,
-                                            radialgraphwidth * radialgraphratio),
-                                   dpi=defaultdpi,
-                                   facecolor='white')
-
-        self.figure_1.add_axes()
-        self.figure_1.add_subplot(311)
-
-        self.ax1 = plt.subplot(3, 1, 1)
-        self.ax1.plot(ne[framenumber])
-        self.ax1.set_title(self.MDS_data_titles['FIT_NE'])
-        self.ax1.set_ylabel(self.MDS_data_ylabel['FIT_NE'])
-
-        self.ax2 = plt.subplot(3, 1, 2)
-        self.ax2.plot(te[framenumber])
-        self.ax2.set_title(self.MDS_data_titles['FIT_TE'])
-        self.ax2.set_ylabel(self.MDS_data_ylabel['FIT_TE'])
-
-        self.ax3 = plt.subplot(3, 1, 3)
-        self.ax3.plot(pe[framenumber])
-        self.ax3.set_title(self.MDS_data_titles['FIT_PE'])
-        self.ax3.set_ylabel(self.MDS_data_ylabel['FIT_PE'])
-
-        self.ax3.set_xlabel('Major Radius (cm) ')
-        self.figure_1.subplots_adjust(hspace=1)
-
-        self.canvas_1 = FigureCanvasTkAgg(self.figure_1, master=radialFrame)
-        self.canvas_1.show()
-        self.canvas_1.get_tk_widget().grid(row=0, column=0)
-
-    def drawTimeGraphs(self):
-
-        cplasma = self.MDS_data['CPLASMA']
-        wmhd = self.MDS_data['WMHD']
-
-        self.figure_a = Figure(figsize=(timegraphwidth,
-                                        timegraphwidth * timegraphratio), dpi=defaultdpi, facecolor='white')
-        ax_a = self.figure_a.add_subplot(2, 1, 1)
-        ax_a.set_xlabel('Time (ms)')
-        ax_a.set_ylabel(self.MDS_data_ylabel['CPLASMA'])
-        ax_a.ticklabel_format(axis='y', style='sci', scilimits=(-2,2))
-        ax_a.set_title(self.MDS_data_titles['CPLASMA'])
-        self.fig_a, = ax_a.plot(cplasma)
-
-        ax_b = self.figure_a.add_subplot(2, 1, 2)
-        ax_b.set_xlabel('Time (ms)')
-        ax_b.set_ylabel(self.MDS_data_ylabel['WMHD'])
-        ax_b.ticklabel_format(axis='y', style='sci', scilimits=(-2,2))
-        ax_b.set_title(self.MDS_data_titles['WMHD'])
-        self.fig_b, = ax_b.plot(wmhd)
-
-        self.figure_a.subplots_adjust(hspace=.7, bottom=0.13)
-
-        self.canvas_a = FigureCanvasTkAgg(self.figure_a, master=self.master)
-        self.canvas_a.show()
-        self.canvas_a.get_tk_widget().grid(row=2, column=1, sticky=tk.N)
+        self.lblOutput = tk.Label(textvariable=self.update_text)
+        self.lblOutput.grid(row=3, column=1)
 
     def drawShotHeader(self):
         # setup shot frame
@@ -188,17 +107,116 @@ class tvMain:
         self.btnShot = tk.Button(self.entryFrame, image=self.playLogo, command=self.shotnumberInput)
         self.btnShot.pack(side=tk.LEFT)
 
-        lblTime = tk.Label(text=strftime('%H:%M:%S'), background='white')
-        lblTime.grid(row=0, column=0)
-        lblUserID = tk.Label(text=userid, background='white')
-        lblUserID.grid(row=0, column=0, sticky=tk.E)
+        # lblTime = tk.Label(text=strftime('%H:%M:%S'), background='white')
+        # lblTime.grid(row=0, column=0)
+        # lblUserID = tk.Label(text=userid, background='white')
+        # lblUserID.grid(row=0, column=0, sticky=tk.E)
 
         self.headerLogo = tk.PhotoImage(file="logo.gif")
         lblLogo = tk.Label(image=self.headerLogo)
-        lblLogo.grid(row=0, column=1, sticky=tk.E)
+        lblLogo.grid(row=0, column=1)
 
-        self.lblOutput = tk.Label(textvariable=self.update_text)
-        self.lblOutput.grid(row=1, column=0, columnspan=2)
+    def drawRadialGraphs(self, framenumber):
+
+        self.framenumber = framenumber
+
+
+        radialFrame = tk.Frame(self.master)
+        radialFrame.grid(row=2, column=0)
+
+        ne = self.MDS_data['FIT_NE']
+        te = self.MDS_data['FIT_TE']
+        pe = self.MDS_data['FIT_PE']
+        rr = self.MDS_data['RR']
+
+
+        # return dim_signal, signal, str(units), str(dim_units)
+        #           X          Y        Yunit       Xunit
+
+        self.figure_1 = plt.figure(figsize=(radialgraphwidth,
+                                            radialgraphwidth * radialgraphratio),
+                                   dpi=defaultdpi,
+                                   facecolor='white')
+
+        self.figure_1.add_axes()
+        displayedTime = '{0:.2f}'.format(ne[0][framenumber]*1000) + 'ms'
+        self.figure_1.suptitle('Thomson data at {}'.format(displayedTime))  #3.1502ms
+
+
+        self.figure_1.add_subplot(311)
+
+        self.ax1 = plt.subplot(3, 1, 1)
+        self.ax1.plot(rr, ne[1][framenumber], marker='.', linestyle='None', c='red')
+        self.ax1.set_title(self.MDS_data_titles['FIT_NE'])
+        setp(self.ax1.get_xticklabels(), visible=False)
+        self.ax1.set_ylabel(ne[2])
+
+        self.ax2 = plt.subplot(3, 1, 2)
+        self.ax2.plot(rr, te[1][framenumber], marker='s', linestyle='None', c='blue')
+        self.ax2.set_title(self.MDS_data_titles['FIT_TE'])
+        setp(self.ax2.get_xticklabels(), visible=False)
+        self.ax2.set_ylabel(te[2])
+
+        self.ax3 = plt.subplot(3, 1, 3)
+        self.ax3.plot(rr, pe[1][framenumber], marker='^', linestyle='None', c='green')
+        self.ax3.set_title(self.MDS_data_titles['FIT_PE'])
+        self.ax3.set_xlabel(pe[3])
+        self.ax3.set_ylabel(pe[2])
+
+        self.figure_1.subplots_adjust(hspace=.25)
+
+        self.canvas_1 = FigureCanvasTkAgg(self.figure_1, master=radialFrame)
+        self.canvas_1.show()
+
+        #xlabels = self.get_radial_x_labels(rr)
+        #self.ax3.set_xticklabels(list(np.arange(-2, 32, 4.375)))
+
+        self.canvas_1.get_tk_widget().grid(row=1, column=0)
+
+    def get_radial_x_labels(self, rr):
+        xlabels = [item.get_text() for item in self.ax1.get_xticklabels()]
+        for foo in range(len(xlabels)):
+            i = int(xlabels[foo])
+            if i == len(rr):
+                xlabels[foo] = rr[i - 1]
+            else:
+                xlabels[foo] = rr[i]
+        return xlabels
+
+
+    def drawTimeGraphs(self):
+
+        cplasma = self.MDS_data['CPLASMA']
+        wmhd = self.MDS_data['WMHD']
+        # return dim_signal, signal, str(units), str(dim_units)
+        #           X          Y        Yunit       Xunit
+
+        maxscale = np.amax([np.amax(cplasma[0]), np.amax(wmhd[0])])
+
+        self.figure_a = Figure(figsize=(timegraphwidth,
+                                        timegraphwidth * timegraphratio), dpi=defaultdpi, facecolor='white')
+        ax_a = self.figure_a.add_subplot(2, 1, 1)
+        ax_a.set_ylabel(cplasma[2])
+        ax_a.set_ylim([0, np.amax(cplasma[1])])
+        ax_a.set_xlim([0, maxscale])
+        ax_a.ticklabel_format(axis='y', style='sci', scilimits=(-2,2))
+        ax_a.set_title(self.MDS_data_titles['CPLASMA'])
+        self.fig_a, = ax_a.plot(cplasma[0], cplasma[1], marker='.', linestyle='None')
+
+        ax_b = self.figure_a.add_subplot(2, 1, 2)
+        ax_b.set_xlabel('Time [s]')
+        ax_b.set_ylabel(wmhd[2])
+        ax_b.set_ylim([0, np.amax(wmhd[1])])
+        ax_b.set_xlim([0, maxscale])
+        ax_b.ticklabel_format(axis='y', style='sci', scilimits=(-2,2))
+        ax_b.set_title(self.MDS_data_titles['WMHD'])
+        self.fig_b, = ax_b.plot(wmhd[0], wmhd[1], marker='.', linestyle='None')
+
+        self.figure_a.subplots_adjust(hspace=.7, bottom=0.13)
+
+        self.canvas_a = FigureCanvasTkAgg(self.figure_a, master=self.master)
+        self.canvas_a.show()
+        self.canvas_a.get_tk_widget().grid(row=2, column=1, sticky=tk.N)
 
     def export_graphs(self, shotid, file_type):
         # foo = "export {} {}, include CSV: {} ".format(str(shotid), file_type, str(include_csv))
@@ -305,7 +323,8 @@ class tvMain:
 
     def populateGraphs(self, shotnumber):
         self.drawTimeGraphs()
-        self.drawRadialGraphs(0)
+        #TODO: replace 17 with a function to map timeframe number in radial to timeframe selected in time plot
+        self.drawRadialGraphs(17)
 
     def radialGraphCursor_moved(self):
         pass
@@ -328,11 +347,52 @@ class tvMain:
 
         self.update_text.set('Data loaded from tree for {}'.format(shotnumber))
 
+        self.tamper_with_data()
+
+    def tamper_with_data(self):
+        # look.  we all do things we aren't proud of.
+        # the MDS tree is incorrect/inconsistant for units.  we, um, 'adjust' things here.
+        # return dim_signal, signal, str(units), str(dim_units)
+        #           X          Y        Yunit       Xunit
+        cpl_tuple = self.MDS_data['CPLASMA']
+        cpl = []
+        cpl.append(list(cpl_tuple[0]))
+        cpl.append(list(cpl_tuple[1]))
+        cpl[1] = [x/1000 for x in cpl[1]]
+        cpl.append('MA')
+        cpl.append('Time [s]')
+        self.MDS_data['CPLASMA'] = cpl
+
+        wmhd_tuple = self.MDS_data['WMHD']
+        wmhd = []
+        wmhd.append(list(wmhd_tuple[0]))
+        wmhd.append(list(wmhd_tuple[1]))
+        wmhd[1] = [x/1000 for x in wmhd[1]]
+        wmhd.append('kJ')
+        wmhd.append('Time [s]')
+        self.MDS_data['WMHD'] = wmhd
+
+        self.MDS_data['RR'] = [27.5984, 38.9197, 46.7415, 54.4599, 61.7876, 68.6409, 75.014, 80.931, 91.5366, 100.742,
+               108.8, 115.914, 119.17, 122.248, 125.164, 127.932, 130.563, 133.068, 135.458, 137.742,
+               139.927, 142.02, 143.581, 144.478, 145.96, 147.817, 149.607, 151.333, 152.999, 156.17]
+
+        for foo in ['FIT_TE', 'FIT_NE', 'FIT_PE']:
+            bar_tuple = self.MDS_data[foo]
+            bar = []
+            bar.append(list(bar_tuple[0]))
+            bar.append(list(bar_tuple[1].transpose()))
+            bar.append(str(bar_tuple[2]))
+            bar.append('Radius [cm]')
+            self.MDS_data[foo] = bar
+
+        updatestring = 'Massaged MDS data.'
+        self.update_text.set(updatestring)
+
 
 def main():
     root = tk.Tk()
     root.wm_title("Thomson Visualization")
-    root.geometry('{}x{}'.format(1200, 768))
+    root.geometry('{}x{}'.format(1300, 768))
     root["bg"] = "white"
     root.grid_columnconfigure(0, uniform="also", minsize=512)
     root.grid_columnconfigure(1, uniform="also")

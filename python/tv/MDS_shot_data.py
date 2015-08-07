@@ -29,6 +29,7 @@ class MDS_shot_data:  ### (1)
         mynode = self.tree.getNode(nodeid)
 
         data = mynode.getData()
+        pdb.set_trace()
 
         units = data.units
 
@@ -74,7 +75,7 @@ class MDS_shot_data:  ### (1)
         #bar = foo.get_timed_tree_data('\\ip')
 
         current = foo.get_tree_data('\\ip')
-        stored_energy = foo.get_tree_data('\\WMHD')
+        stored_energy = foo.get_tree_data('\\EFIT01::WMHD')
         nef = foo.get_tree_data('\\NEF')
         pef = foo.get_tree_data('\\PEF')
         tef = foo.get_tree_data('\\TEF')
