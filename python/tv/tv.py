@@ -10,17 +10,13 @@ import os
 import datetime
 
 import matplotlib
-import matplotlib.pyplot as plt
 from pylab import *
 
 import numpy as np
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
-from matplotlib.widgets import Cursor #multicursor?
-
-from time import strftime
-
 USE_MDS_DATA = True
+
 try:
     import MDS_shot_data as mdsdata
 except ImportError:
@@ -28,6 +24,8 @@ except ImportError:
     import mock_shot_data as mockdata
 
 import ctypes
+
+from matplotlib.widgets import MultiCursor
 
 defaultdpi = 100
 radialgraphwidth = 6.5
@@ -116,19 +114,44 @@ class tvMain:
         lblLogo = tk.Label(image=self.headerLogo)
         lblLogo.grid(row=0, column=1)
 
-    def drawRadialGraphs(self, framenumber):
-
+    def updateRadialGraphs(self, framenumber, time_difference = 0):
         self.framenumber = framenumber
-
-
-        radialFrame = tk.Frame(self.master)
-        radialFrame.grid(row=2, column=0)
 
         ne = self.MDS_data['FIT_NE']
         te = self.MDS_data['FIT_TE']
         pe = self.MDS_data['FIT_PE']
         rr = self.MDS_data['RR']
 
+        displayedTime = '{0:.2f}'.format(ne[0][framenumber]*1000) + 'ms'
+        displayedTimeDifference = '{0:.2f}'.format(time_difference) + 'ms'
+        self.figure_1.suptitle('Thomson data at {}, {} different'.format(displayedTime, displayedTimeDifference))  #3.1502ms
+
+        self.ax1.clear()
+        self.ax1.plot(rr, ne[1][framenumber], marker='.', linestyle='None', c='red')
+        self.ax1.set_title(self.MDS_data_titles['FIT_NE'])
+        setp(self.ax1.get_xticklabels(), visible=False)
+        self.ax1.set_ylabel(ne[2])
+
+        self.ax2.clear()
+        self.ax2.plot(rr, te[1][framenumber], marker='s', linestyle='None', c='blue')
+        self.ax2.set_title(self.MDS_data_titles['FIT_TE'])
+        setp(self.ax2.get_xticklabels(), visible=False)
+        self.ax2.set_ylabel(te[2])
+
+        self.ax3.clear()
+        self.ax3.plot(rr, pe[1][framenumber], marker='^', linestyle='None', c='green')
+        self.ax3.set_title(self.MDS_data_titles['FIT_PE'])
+        self.ax3.set_xlabel(pe[3])
+        self.ax3.set_ylabel(pe[2])
+
+        self.canvas_1.draw()
+
+    def createRadialGraphs(self, selected_time):
+
+        radialFrame = tk.Frame(self.master)
+        radialFrame.grid(row=2, column=0)
+
+        rr = self.MDS_data['RR']
 
         # return dim_signal, signal, str(units), str(dim_units)
         #           X          Y        Yunit       Xunit
@@ -139,52 +162,21 @@ class tvMain:
                                    facecolor='white')
 
         self.figure_1.add_axes()
-        displayedTime = '{0:.2f}'.format(ne[0][framenumber]*1000) + 'ms'
-        self.figure_1.suptitle('Thomson data at {}'.format(displayedTime))  #3.1502ms
-
 
         self.figure_1.add_subplot(311)
-
         self.ax1 = plt.subplot(3, 1, 1)
-        self.ax1.plot(rr, ne[1][framenumber], marker='.', linestyle='None', c='red')
-        self.ax1.set_title(self.MDS_data_titles['FIT_NE'])
-        setp(self.ax1.get_xticklabels(), visible=False)
-        self.ax1.set_ylabel(ne[2])
-
         self.ax2 = plt.subplot(3, 1, 2)
-        self.ax2.plot(rr, te[1][framenumber], marker='s', linestyle='None', c='blue')
-        self.ax2.set_title(self.MDS_data_titles['FIT_TE'])
-        setp(self.ax2.get_xticklabels(), visible=False)
-        self.ax2.set_ylabel(te[2])
-
         self.ax3 = plt.subplot(3, 1, 3)
-        self.ax3.plot(rr, pe[1][framenumber], marker='^', linestyle='None', c='green')
-        self.ax3.set_title(self.MDS_data_titles['FIT_PE'])
-        self.ax3.set_xlabel(pe[3])
-        self.ax3.set_ylabel(pe[2])
 
         self.figure_1.subplots_adjust(hspace=.25)
 
         self.canvas_1 = FigureCanvasTkAgg(self.figure_1, master=radialFrame)
         self.canvas_1.show()
+        self.canvas_1.get_tk_widget().grid(row=0, column=0)
 
-        #xlabels = self.get_radial_x_labels(rr)
-        #self.ax3.set_xticklabels(list(np.arange(-2, 32, 4.375)))
+        self.updateRadialGraphTime(selected_time)
 
-        self.canvas_1.get_tk_widget().grid(row=1, column=0)
-
-    def get_radial_x_labels(self, rr):
-        xlabels = [item.get_text() for item in self.ax1.get_xticklabels()]
-        for foo in range(len(xlabels)):
-            i = int(xlabels[foo])
-            if i == len(rr):
-                xlabels[foo] = rr[i - 1]
-            else:
-                xlabels[foo] = rr[i]
-        return xlabels
-
-
-    def drawTimeGraphs(self):
+    def createTimeGraphs(self):
 
         cplasma = self.MDS_data['CPLASMA']
         wmhd = self.MDS_data['WMHD']
@@ -215,8 +207,33 @@ class tvMain:
         self.figure_a.subplots_adjust(hspace=.7, bottom=0.13)
 
         self.canvas_a = FigureCanvasTkAgg(self.figure_a, master=self.master)
+
+        multi = MultiCursor(self.canvas_a, (ax_a, ax_b), color='r', lw=2, horizOn=True)
+        self.canvas_a.mpl_connect('motion_notify_event', self.TimeGraphMove)
+
         self.canvas_a.show()
-        self.canvas_a.get_tk_widget().grid(row=2, column=1, sticky=tk.N)
+        self.canvas_a.get_tk_widget().grid(row=2, column=1)
+
+    def TimeGraphMove(self, event):
+
+        if event.xdata == None:
+            return
+
+        selected_time = event.xdata
+
+        self.updateRadialGraphTime(selected_time)
+
+    def updateRadialGraphTime(self, selected_time):
+        # MPL MouseEvent: xy=(456,424) xydata=(0.796994851319,0.273058346212) button=None dblclick=False inaxes=Axes(0.125,0.614815;0.775x0.285185)
+        nearest_frame = self.find_idx_nearest_value(self.MDS_data['FIT_NE'][0], selected_time)
+        nearest_time = self.MDS_data['FIT_NE'][0][nearest_frame]
+        timedelta = nearest_time - selected_time
+        self.updateRadialGraphs(nearest_frame, timedelta)
+        pass
+
+    def find_idx_nearest_value(self, target, val):
+        idx = (np.abs(target-val)).argmin()
+        return idx
 
     def export_graphs(self, shotid, file_type):
         # foo = "export {} {}, include CSV: {} ".format(str(shotid), file_type, str(include_csv))
@@ -322,9 +339,11 @@ class tvMain:
         return data.does_shot_exist(shotnumber)
 
     def populateGraphs(self, shotnumber):
-        self.drawTimeGraphs()
-        #TODO: replace 17 with a function to map timeframe number in radial to timeframe selected in time plot
-        self.drawRadialGraphs(17)
+        self.createTimeGraphs()
+
+        max_ip_time = np.float64(self.MDS_data['CPLASMA'][0][np.argmax(self.MDS_data['CPLASMA'][1])])
+
+        self.createRadialGraphs(max_ip_time)
 
     def radialGraphCursor_moved(self):
         pass
@@ -392,7 +411,7 @@ class tvMain:
 def main():
     root = tk.Tk()
     root.wm_title("Thomson Visualization")
-    root.geometry('{}x{}'.format(1300, 768))
+    root.geometry('{}x{}'.format(1300, 800))
     root["bg"] = "white"
     root.grid_columnconfigure(0, uniform="also", minsize=512)
     root.grid_columnconfigure(1, uniform="also")
