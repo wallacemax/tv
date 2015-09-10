@@ -18,8 +18,8 @@ class mock_shot_data:  ### (1)
         return foo[0], foo[1], foo[2].decode('utf-8'), foo[3].decode('utf-8')
 
     def get_pickled(self, var):
-        file = open(var + '.pk', 'rb')
-        data = pickle.load(file, encoding='latin-1')
+        file = open(str(self.shotid) + '_' + var + '.pk', 'rb')
+        data = pickle.load(file)
         file.close()
         return data
 

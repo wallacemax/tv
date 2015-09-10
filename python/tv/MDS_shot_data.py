@@ -14,7 +14,7 @@ import pickle
 class MDS_shot_data:  ### (1)
     def __init__(self, treename, shotid):
         self.treename = treename
-        self.shotid = shotid
+        self.shotid = int(shotid)
 
         self.tree = MDSplus.Tree(self.treename, self.shotid, 'Readonly')
 
@@ -29,7 +29,6 @@ class MDS_shot_data:  ### (1)
         mynode = self.tree.getNode(nodeid)
 
         data = mynode.getData()
-        pdb.set_trace()
 
         units = data.units
 
@@ -63,7 +62,7 @@ class MDS_shot_data:  ### (1)
         pass
 
     def pickle_data(self, nodeid, var_name):
-        fileName = var_name + '.pk'
+        fileName = str(self.shotid) + '_' + var_name + '.pk'
         file = open(fileName, 'wb')
         foo = self.get_tree_data(nodeid)
         pickle.dump(foo, file)
@@ -71,16 +70,22 @@ class MDS_shot_data:  ### (1)
         print('pickled {} into {}'.format(nodeid, fileName))
 
     def test(self):
-        foo = MDS_shot_data('nstx', 130000)
+        foo = MDS_shot_data('nstx', 130110)
         #bar = foo.get_timed_tree_data('\\ip')
 
-        current = foo.get_tree_data('\\ip')
+        current = foo.get_tree_data('\\IP')
         stored_energy = foo.get_tree_data('\\EFIT01::WMHD')
         nef = foo.get_tree_data('\\NEF')
         pef = foo.get_tree_data('\\PEF')
         tef = foo.get_tree_data('\\TEF')
         pdb.set_trace()
 
+        self.pickle_data('\\IP', 'IP')
+        self.pickle_data('\\EFIT01::WMHD', 'EFIT01WMHD')
+        self.pickle_data('\\NEF', 'NEF')
+        self.pickle_data('\\PEF', 'PEF')
+        self.pickle_data('\\TEF', 'TEF')
+
 if __name__ == '__main__':
-    foo = MDS_shot_data('nstx', 130000)
+    foo = MDS_shot_data('nstx', 130110)
     foo.test()
