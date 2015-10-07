@@ -1,15 +1,27 @@
+
 __author__ = 'maxwallace'
 import sys
+import datetime
+import os
+
+logfilename = '{}_Thomson.log'.format(datetime.datetime.isoformat(
+            datetime.datetime.today()).split('.')[0].replace('-', '').replace(':', ''))
+import logging
+logging.basicConfig(filename=logfilename, level=logging.ERROR)
+logger = logging.getLogger(__name__)
+
 try:
     # for Python2
     import Tkinter as tk
+    logger.debug('Using Tkinter for Python2')
 except ImportError:
     # for Python3
     import tkinter as tk
-import os
-import datetime
+    logger.debug('Using tkinter for Python3')
 
 import matplotlib
+matplotlib.use('agg')
+matplotlib.use('TkAgg')
 from pylab import *
 
 import numpy as np
@@ -26,6 +38,7 @@ except ImportError:
 import ctypes
 
 from matplotlib.widgets import MultiCursor
+from matplotlib.widgets import SpanSelector
 
 defaultdpi = 100
 radialgraphwidth = 6.5
@@ -39,9 +52,10 @@ userid = os.getenv('LOGNAME')
 
 include_csv = 0
 
-plotfont = {'family': 'san-serif', 'size': 12}
+plotfont = {'family': 'Bitstream Vera Sans', 'size': 12}
 matplotlib.rc('font', **plotfont)
 
+headerlogofilepath = "NSTX-U_logo_thick_font_transparent.gif"
 
 class tvMain:
     def __init__(self, master):
@@ -49,6 +63,8 @@ class tvMain:
 
         self.update_text = tk.StringVar()
         self.update_text.set('Loading initial graphics.')
+
+        self.loadPreferences()
 
         self.InitUI()
 
@@ -76,6 +92,12 @@ class tvMain:
         self.drawShotHeader()
 
         self.drawFooter()
+
+    def loadPreferences(self):
+        #hooge stub
+
+        self.radialgraphxmin = 0
+        self.radialgraphxmax = 180
 
     def drawFooter(self):
         # footer
@@ -110,13 +132,15 @@ class tvMain:
         # lblUserID = tk.Label(text=userid, background='white')
         # lblUserID.grid(row=0, column=0, sticky=tk.E)
 
-        self.headerLogo = tk.PhotoImage(file="logo.gif")
+        self.headerLogo = tk.PhotoImage(file=headerlogofilepath)
         lblLogo = tk.Label(image=self.headerLogo)
         lblLogo.grid(row=0, column=1)
 
     def updateRadialGraphs(self, framenumber, time_difference = 0):
-        self.framenumber = framenumber
 
+        self.framenumber = framenumber
+        logger.debug('Updating radial graphs for framenumber {} at time_difference {}'
+                     .format(framenumber, time_difference))
         ne = self.MDS_data['FIT_NE']
         te = self.MDS_data['FIT_TE']
         pe = self.MDS_data['FIT_PE']
@@ -144,9 +168,12 @@ class tvMain:
         self.ax3.set_xlabel(pe[3])
         self.ax3.set_ylabel(pe[2])
 
+        self.changeRadialRange(self.radialgraphxmin, self.radialgraphxmax)
+
         self.canvas_1.draw()
 
     def createRadialGraphs(self, selected_time):
+        logger.debug('Creating radial graphs for {}'.format(selected_time))
 
         radialFrame = tk.Frame(self.master)
         radialFrame.grid(row=2, column=0)
@@ -171,10 +198,52 @@ class tvMain:
         self.figure_1.subplots_adjust(hspace=.25)
 
         self.canvas_1 = FigureCanvasTkAgg(self.figure_1, master=radialFrame)
+
         self.canvas_1.show()
         self.canvas_1.get_tk_widget().grid(row=0, column=0)
 
+        self.span1 = SpanSelector(self.ax1, self.rangeOnSelect, 'horizontal', useblit=True,
+                    rectprops=dict(alpha=0.5, facecolor='red'))
+        self.span2 = SpanSelector(self.ax2, self.rangeOnSelect, 'horizontal', useblit=True,
+                    rectprops=dict(alpha=0.5, facecolor='red'))
+        self.span3 = SpanSelector(self.ax3, self.rangeOnSelect, 'horizontal', useblit=True,
+                    rectprops=dict(alpha=0.5, facecolor='red'))
+
         self.updateRadialGraphTime(selected_time)
+
+    def rangeOnSelect(self, xmin, xmax):
+
+        rr = self.MDS_data['RR']
+        indmin, indmax = np.searchsorted(rr, (xmin, xmax))
+        indmax = min(160, indmax)
+
+        thisx = rr[indmin:indmax]
+
+        self.radialgraphxmin = thisx[0]
+        self.radialgraphxmax = thisx[-1]
+
+        self.update_text.set("Set bounds to {}, {}".format(self.radialgraphxmin, self.radialgraphxmax))
+
+        self.changeRadialRange(self.radialgraphxmin, self.radialgraphxmax)
+
+    def changeRadialRange(self, graphxmin, graphxmax):
+        self.ax1.set_xlim(graphxmin, graphxmax)
+        self.ax2.set_xlim(graphxmin, graphxmax)
+        self.ax3.set_xlim(graphxmin, graphxmax)
+        self.canvas_1.draw()
+
+    def updateRadialGraphTime(self, selected_time):
+        try:
+            # MPL MouseEvent: xy=(456,424) xydata=(0.796994851319,0.273058346212) button=None dblclick=False inaxes=Axes(0.125,0.614815;0.775x0.285185)
+            nearest_frame = self.find_idx_nearest_value(self.MDS_data['FIT_NE'][0], selected_time)
+            nearest_time = self.MDS_data['FIT_NE'][0][nearest_frame]
+            timedelta = nearest_time - selected_time
+            self.updateRadialGraphs(nearest_frame, timedelta)
+            pass
+        except Exception as e:
+            self.update_text.set("An error was generated, and has been written to the log.")
+            logger.error(e.message)
+            logger.error(e.__doc__)
 
     def createTimeGraphs(self):
 
@@ -208,7 +277,8 @@ class tvMain:
 
         self.canvas_a = FigureCanvasTkAgg(self.figure_a, master=self.master)
 
-        multi = MultiCursor(self.canvas_a, (ax_a, ax_b), color='r', lw=2, horizOn=True)
+        self.multi = MultiCursor(self.canvas_a, (ax_a, ax_b), color='g', lw=2, horizOn=True)
+
         self.canvas_a.mpl_connect('motion_notify_event', self.TimeGraphMove)
 
         self.canvas_a.show()
@@ -222,14 +292,6 @@ class tvMain:
         selected_time = event.xdata
 
         self.updateRadialGraphTime(selected_time)
-
-    def updateRadialGraphTime(self, selected_time):
-        # MPL MouseEvent: xy=(456,424) xydata=(0.796994851319,0.273058346212) button=None dblclick=False inaxes=Axes(0.125,0.614815;0.775x0.285185)
-        nearest_frame = self.find_idx_nearest_value(self.MDS_data['FIT_NE'][0], selected_time)
-        nearest_time = self.MDS_data['FIT_NE'][0][nearest_frame]
-        timedelta = nearest_time - selected_time
-        self.updateRadialGraphs(nearest_frame, timedelta)
-        pass
 
     def find_idx_nearest_value(self, target, val):
         idx = (np.abs(target-val)).argmin()
@@ -315,22 +377,28 @@ class tvMain:
                 key = item[0]
                 break
 
-        return self.MDS_data[key][framenumber]
+        return self.MDS_data[key][1][framenumber]
 
     def shotnumberInput(self):
-        shotnumber = self.txtShotNumber.get()
-        if shotnumber == '':
-            pass
 
-        self.get_data_object(shotnumber)
+        try:
+            shotnumber = self.txtShotNumber.get()
+            if shotnumber == '':
+                pass
 
-        self.update_text.set('Querying {} tree for {}'.format(treename, str(shotnumber)))
+            self.get_data_object(shotnumber)
 
-        self.load_data(shotnumber)
+            self.update_text.set('Querying {} tree for {}'.format(treename, str(shotnumber)))
 
-        self.populateGraphs(shotnumber)
+            self.load_data(shotnumber)
 
-        self.update_text.set('Shot number {} loaded from tree.'.format(str(shotnumber)))
+            self.populateGraphs(shotnumber)
+
+            self.update_text.set('Shot number {} loaded from tree.'.format(str(shotnumber)))
+        except Exception as e:
+            self.update_text.set("An error has occurred, and has been written to the log.")
+            logger.error(e.message)
+            logger.error(e.__doc__)
 
     def doesShotExist(self, shotnumber):
         # TODO: is there a doesShotExist method available in the tree?
@@ -355,7 +423,7 @@ class tvMain:
         if USE_MDS_DATA:
             self.data = mdsdata.MDS_shot_data(treename, shotnumber)
         else:
-            self.data = mockdata.mock_shot_data('foo', 4)
+            self.data = mockdata.mock_shot_data('foo', shotnumber)
 
     def load_data(self, shotnumber):
         for key, value in self.MDS_data_nodes.items():
@@ -407,11 +475,12 @@ class tvMain:
         updatestring = 'Massaged MDS data.'
         self.update_text.set(updatestring)
 
-
 def main():
     root = tk.Tk()
     root.wm_title("Thomson Visualization")
-    root.geometry('{}x{}'.format(1300, 800))
+    w, h = root.winfo_screenwidth(), root.winfo_screenheight()
+    root.geometry("%dx%d+0+0" % (w, h))
+    #root.geometry('{}x{}'.format(1300, 800))
     root["bg"] = "white"
     root.grid_columnconfigure(0, uniform="also", minsize=512)
     root.grid_columnconfigure(1, uniform="also")
