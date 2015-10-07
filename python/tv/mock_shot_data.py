@@ -18,7 +18,7 @@ class mock_shot_data:  ### (1)
         return foo[0], foo[1], foo[2].decode('utf-8'), foo[3].decode('utf-8')
 
     def get_pickled(self, var):
-        file = open(str(self.shotid) + '_' + var + '.pk', 'rb')
+        file = open('sample_data/' + str(self.shotid) + '_' + var + '.pk', 'rb')
         data = pickle.load(file)
         file.close()
         return data
@@ -38,3 +38,5 @@ class mock_shot_data:  ### (1)
 if __name__ == '__main__':
     foo = mock_shot_data('nstx', 130000)
     foo.test()
+
+#091515 latest shot is 201287

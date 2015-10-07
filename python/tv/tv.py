@@ -7,7 +7,7 @@ import os
 logfilename = '{}_Thomson.log'.format(datetime.datetime.isoformat(
             datetime.datetime.today()).split('.')[0].replace('-', '').replace(':', ''))
 import logging
-logging.basicConfig(filename=logfilename, level=logging.INFO)
+logging.basicConfig(filename=logfilename, level=logging.ERROR)
 logger = logging.getLogger(__name__)
 
 try:
@@ -64,6 +64,8 @@ class tvMain:
         self.update_text = tk.StringVar()
         self.update_text.set('Loading initial graphics.')
 
+        self.loadPreferences()
+
         self.InitUI()
 
         self.MDS_data_nodes = {'FIT_NE': '\\NEF',
@@ -90,6 +92,12 @@ class tvMain:
         self.drawShotHeader()
 
         self.drawFooter()
+
+    def loadPreferences(self):
+        #hooge stub
+
+        self.radialgraphxmin = 0
+        self.radialgraphxmax = 180
 
     def drawFooter(self):
         # footer
@@ -129,6 +137,7 @@ class tvMain:
         lblLogo.grid(row=0, column=1)
 
     def updateRadialGraphs(self, framenumber, time_difference = 0):
+
         self.framenumber = framenumber
         logger.debug('Updating radial graphs for framenumber {} at time_difference {}'
                      .format(framenumber, time_difference))
@@ -159,8 +168,9 @@ class tvMain:
         self.ax3.set_xlabel(pe[3])
         self.ax3.set_ylabel(pe[2])
 
-        self.canvas_1.draw()
+        self.changeRadialRange(self.radialgraphxmin, self.radialgraphxmax)
 
+        self.canvas_1.draw()
 
     def createRadialGraphs(self, selected_time):
         logger.debug('Creating radial graphs for {}'.format(selected_time))
@@ -185,8 +195,6 @@ class tvMain:
         self.ax2 = plt.subplot(3, 1, 2)
         self.ax3 = plt.subplot(3, 1, 3)
 
-        self.span = SpanSelector(self.ax3, self.updateRadialGraphBounds, 'horizontal', span_stays=True)
-
         self.figure_1.subplots_adjust(hspace=.25)
 
         self.canvas_1 = FigureCanvasTkAgg(self.figure_1, master=radialFrame)
@@ -194,10 +202,35 @@ class tvMain:
         self.canvas_1.show()
         self.canvas_1.get_tk_widget().grid(row=0, column=0)
 
+        self.span1 = SpanSelector(self.ax1, self.rangeOnSelect, 'horizontal', useblit=True,
+                    rectprops=dict(alpha=0.5, facecolor='red'))
+        self.span2 = SpanSelector(self.ax2, self.rangeOnSelect, 'horizontal', useblit=True,
+                    rectprops=dict(alpha=0.5, facecolor='red'))
+        self.span3 = SpanSelector(self.ax3, self.rangeOnSelect, 'horizontal', useblit=True,
+                    rectprops=dict(alpha=0.5, facecolor='red'))
+
         self.updateRadialGraphTime(selected_time)
 
-    def updateRadialGraphBounds(self, vmin, vmax):
-        print('min {} max {}'.format(vmin, vmax))
+    def rangeOnSelect(self, xmin, xmax):
+
+        rr = self.MDS_data['RR']
+        indmin, indmax = np.searchsorted(rr, (xmin, xmax))
+        indmax = min(160, indmax)
+
+        thisx = rr[indmin:indmax]
+
+        self.radialgraphxmin = thisx[0]
+        self.radialgraphxmax = thisx[-1]
+
+        self.update_text.set("Set bounds to {}, {}".format(self.radialgraphxmin, self.radialgraphxmax))
+
+        self.changeRadialRange(self.radialgraphxmin, self.radialgraphxmax)
+
+    def changeRadialRange(self, graphxmin, graphxmax):
+        self.ax1.set_xlim(graphxmin, graphxmax)
+        self.ax2.set_xlim(graphxmin, graphxmax)
+        self.ax3.set_xlim(graphxmin, graphxmax)
+        self.canvas_1.draw()
 
     def updateRadialGraphTime(self, selected_time):
         try:

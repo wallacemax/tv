@@ -1,17 +1,40 @@
+#!/usr/bin/env python
+"""
+The SpanSelector is a mouse widget to select a xmin/xmax range and plot the
+detail view of the selected region in the lower axes
+"""
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.widgets import MultiCursor
+from matplotlib.widgets import SpanSelector
 
-t = np.arange(0.0, 2.0, 0.01)
-s1 = np.sin(2*np.pi*t)
-s2 = np.sin(4*np.pi*t)
-fig = plt.figure()
-ax1 = fig.add_subplot(211)
-ax1.plot(t, s1)
+fig = plt.figure(figsize=(8,6))
+ax = fig.add_subplot(211, axisbg='#FFFFCC')
+
+x = np.arange(0.0, 5.0, 0.01)
+y = np.sin(2*np.pi*x) + 0.5*np.random.randn(len(x))
+
+ax.plot(x, y, '-')
+ax.set_ylim(-2,2)
+ax.set_title('Press left mouse button and drag to test')
+
+ax2 = fig.add_subplot(212, axisbg='#FFFFCC')
+line2, = ax2.plot(x, y, '-')
 
 
-ax2 = fig.add_subplot(212, sharex=ax1)
-ax2.plot(t, s2)
+def onselect(xmin, xmax):
+    indmin, indmax = np.searchsorted(x, (xmin, xmax))
+    indmax = min(len(x)-1, indmax)
 
-multi = MultiCursor(fig.canvas, (ax1, ax2), color='r', lw=1)
+    thisx = x[indmin:indmax]
+    thisy = y[indmin:indmax]
+    line2.set_data(thisx, thisy)
+    ax2.set_xlim(thisx[0], thisx[-1])
+    ax2.set_ylim(thisy.min(), thisy.max())
+    fig.canvas.draw()
+
+# set useblit True on gtkagg for enhanced performance
+span = SpanSelector(ax, onselect, 'horizontal', useblit=False,
+                    rectprops=dict(alpha=0.5, facecolor='red') )
+
+
 plt.show()
