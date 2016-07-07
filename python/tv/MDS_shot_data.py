@@ -4,7 +4,7 @@ import sys
 sys.path.append("/usr/pppl/mdsplus/v5.0/mdsobjects")
 
 try:
-    import python as MDSplus
+    import MDSplus as MDSplus
 except ImportError:
     raise
 
@@ -56,7 +56,6 @@ class MDS_shot_data:  ### (1)
             dim_units = data.dim_of().units
 
         return dim_signal, signal, str(units), str(dim_units)
-
 
     def does_shot_exist(self, shotid):
         pass
