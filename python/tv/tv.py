@@ -128,12 +128,14 @@ class tvMain:
         self.lblShot = tk.Label(self.entryFrame, text='Shot Number:')
         self.lblShot.pack(side=tk.LEFT)
 
-        self.txtShotNumber = tk.Entry(self.entryFrame, width=12)
-        self.txtShotNumber.insert(0, "205088")
+        self.txtShotNumber = tk.Entry(self.entryFrame, width=12, fg='red', justify='center')
+        self.txtShotNumber.insert(0, '205088')
         self.txtShotNumber.pack(side=tk.LEFT)
-        self.playLogo = tk.PhotoImage(file="play.gif")
-        self.btnShot = tk.Button(self.entryFrame, image=self.playLogo, command=self.shotnumberInput)
-        self.btnShot.pack(side=tk.LEFT)
+        self.txtShotNumber.bind("<Return>", lambda event: self.shotnumberInput())
+        #070616 remove button
+        #self.playLogo = tk.PhotoImage(file="play.gif")
+        #self.btnShot = tk.Button(self.entryFrame, image=self.playLogo, command=self.shotnumberInput)
+        #self.btnShot.pack(side=tk.LEFT)
 
         # lblTime = tk.Label(text=strftime('%H:%M:%S'), background='white')
         # lblTime.grid(row=0, column=0)
@@ -145,6 +147,48 @@ class tvMain:
         lblLogo.grid(row=0, column=1)
 
         self.update_text.set("Drew shot header.")
+
+    def createRadialGraphs(self, selected_time):
+        # logger.debug('Creating radial graphs for {}'.format(selected_time))
+
+        radialFrame = tk.Frame(self.master)
+        radialFrame.grid(row=2, column=0)
+
+        # pdb.set_trace()
+        self.figure_1 = figure(figsize=(radialgraphwidth,
+                                        radialgraphwidth * radialgraphratio),
+                               dpi=defaultdpi,
+                               facecolor='white'
+                               )
+
+        self.figure_1.add_subplot(311)
+        self.ax1 = subplot(3, 1, 1)
+        self.ax2 = subplot(3, 1, 2)
+        self.ax3 = subplot(3, 1, 3)
+
+        self.figure_1.subplots_adjust(hspace=.25)
+
+        self.canvas_1 = FigureCanvasTkAgg(self.figure_1, master=radialFrame)
+
+        self.canvas_1.show()
+        self.canvas_1.get_tk_widget().grid(row=0, column=0)
+
+        self.span1 = SpanSelector(self.ax1, self.rangeOnSelect, 'horizontal', useblit=True,
+                                  rectprops=dict(alpha=0.5, facecolor='red'))
+        self.span2 = SpanSelector(self.ax2, self.rangeOnSelect, 'horizontal', useblit=True,
+                                  rectprops=dict(alpha=0.5, facecolor='red'))
+        self.span3 = SpanSelector(self.ax3, self.rangeOnSelect, 'horizontal', useblit=True,
+                                  rectprops=dict(alpha=0.5, facecolor='red'))
+
+        self.btnResetZoom = tk.Button(text="Reset Zoom",
+                                      command=lambda:
+                                      self.changeRadialRange(self.radialmachinexmin, self.radialmachinexmax),
+                                      master=radialFrame)
+        self.btnResetZoom.grid(row=2, column=0)
+
+        self.updateRadialGraphTime(selected_time)
+
+        self.update_text.set("Created radial plots.")
 
     def updateRadialGraphs(self, framenumber, time_difference = 0):
 
@@ -184,63 +228,6 @@ class tvMain:
 
         self.canvas_1.draw()
 
-    def createRadialGraphs(self, selected_time):
-        # logger.debug('Creating radial graphs for {}'.format(selected_time))
-
-        radialFrame = tk.Frame(self.master)
-        radialFrame.grid(row=2, column=0)
-
-        #pdb.set_trace()
-        self.figure_1 = figure(figsize=(radialgraphwidth,
-                                            radialgraphwidth * radialgraphratio),
-                                   dpi=defaultdpi,
-                                   facecolor='white'
-                                    )
-
-        self.figure_1.add_subplot(311)
-        self.ax1 = subplot(3, 1, 1)
-        self.ax2 = subplot(3, 1, 2)
-        self.ax3 = subplot(3, 1, 3)
-
-        self.figure_1.subplots_adjust(hspace=.25)
-
-        self.canvas_1 = FigureCanvasTkAgg(self.figure_1, master=radialFrame)
-
-        self.canvas_1.show()
-        self.canvas_1.get_tk_widget().grid(row=0, column=0)
-
-        self.span1 = SpanSelector(self.ax1, self.rangeOnSelect, 'horizontal', useblit=True,
-                    rectprops=dict(alpha=0.5, facecolor='red'))
-        self.span2 = SpanSelector(self.ax2, self.rangeOnSelect, 'horizontal', useblit=True,
-                    rectprops=dict(alpha=0.5, facecolor='red'))
-        self.span3 = SpanSelector(self.ax3, self.rangeOnSelect, 'horizontal', useblit=True,
-                    rectprops=dict(alpha=0.5, facecolor='red'))
-
-        self.btnResetZoom = tk.Button(text="Reset Zoom",
-                                      command=lambda:
-                                      self.changeRadialRange(self.radialmachinexmin, self.radialmachinexmax),
-                                      master=radialFrame)
-        self.btnResetZoom.grid(row=2, column=0)
-
-        self.updateRadialGraphTime(selected_time)
-
-        self.update_text.set("Created radial plots.")
-
-    def rangeOnSelect(self, xmin, xmax):
-
-        rr = self.MDS_data['RR']
-        indmin, indmax = np.searchsorted(rr, (xmin, xmax))
-        indmax = min(self.radialgraphxmax, indmax)
-
-        thisx = rr[indmin:indmax]
-
-        self.radialgraphxmin = thisx[0]
-        self.radialgraphxmax = thisx[-1]
-
-        self.update_text.set("Redrew radial plot boundaries.")
-
-        self.changeRadialRange(self.radialgraphxmin, self.radialgraphxmax)
-
     def changeRadialRange(self, graphxmin, graphxmax):
         self.ax1.set_xlim(graphxmin, graphxmax)
         self.ax2.set_xlim(graphxmin, graphxmax)
@@ -262,6 +249,52 @@ class tvMain:
             # logger.error(e.__doc__)
 
         self.update_text.set("Displayed closest Thomson data to {0:.2f}ms.".format(selected_time*1000))
+
+    def rangeOnSelect(self, xmin, xmax):
+
+        rr = self.MDS_data['RR']
+        indmin, indmax = np.searchsorted(rr, (xmin, xmax))
+        indmax = min(self.radialgraphxmax, indmax)
+
+        thisx = rr[indmin:indmax]
+
+        self.radialgraphxmin = thisx[0]
+        self.radialgraphxmax = thisx[-1]
+
+        self.update_text.set("Redrew radial plot boundaries.")
+
+        self.changeRadialRange(self.radialgraphxmin, self.radialgraphxmax)
+
+    def shotnumberInput(self):
+
+        try:
+            self.txtShotNumber['fg'] = 'green'
+            self.shotnumber = self.txtShotNumber.get()
+            if self.shotnumber == '':
+                pass
+
+            self.get_data_object(self.shotnumber)
+
+            if not self.data.does_shot_exist(self.shotnumber):
+                self.update_text.set("IP or Thomson not available in MDS for {}.".format(self.shotnumber))
+                return
+
+            self.update_text.set('Querying {} tree for {}'.format(treename, str(self.shotnumber)))
+
+            self.load_data(self.shotnumber)
+
+            self.populateGraphs(self.shotnumber)
+
+            self.update_text.set('Shot number {} loaded from tree.'.format(str(self.shotnumber)))
+        except Exception as e:
+            self.txtShotNumber['fg'] = "red"
+            print(e)
+            self.update_text.set("An error has occurred, and has been written to the log.")
+            # logger.error(e.message)
+            # logger.error(e.__doc__)
+
+    def radialGraphCursor_moved(self):
+        pass
 
     def roundtohundred(self, x):
         return int(math.ceil(x / 100.0)) * 100
@@ -320,79 +353,6 @@ class tvMain:
         idx = (np.abs(target-val)).argmin()
         return idx
 
-    def export_graphs(self, shotid, file_type):
-        # foo = "export {} {}, include CSV: {} ".format(str(shotid), file_type, str(include_csv))
-        # print(foo)
-        shotnumber = str(shotid)
-
-        # YYYYMMDDTHH24MMSS
-        timestamp = datetime.datetime.isoformat(
-            datetime.datetime.today()).split('.')[0].replace('-', '').replace(':', '')
-
-        bar = ''
-        if self.include_csv.get():
-            bar = (file_type + ' and CSV')
-        else:
-            bar = file_type
-
-        updatestring = 'Images for {} saved in {} format'.format(shotid, bar)
-
-
-        if not os.path.exists(shotnumber):
-            os.makedirs(shotnumber)
-
-        baz = ['figure_a', 'figure_1']
-
-        for graphName in baz:
-            graph = getattr(self, graphName)
-
-            self.add_graph_thumbprint(graph)
-
-            graphTitle = ''
-            if '_1' in graphName:
-                graphTitle = 'ThomsonData'
-            else:
-                graphTitle = 'TimeData'
-
-            fileName = '{}/{}_{}_{}.{}'.format(shotnumber, shotnumber, graphTitle, timestamp,
-                                               file_type).replace(' ', '')
-            graph.savefig(fileName, dpi=defaultdpi, format=file_type, bbox_inches='tight', frameon=None)
-
-            if self.include_csv.get():
-                self.export_csv_data(fileName, file_type, graph, graphTitle)
-
-        self.update_text.set(updatestring)
-
-    def add_graph_thumbprint(self, graph):
-
-        thumbprinttext = userid + ' ' + self.txtShotNumber.get()
-
-        graph.text(.95,.85, thumbprinttext,
-                   horizontalalignment='right',
-                   verticalalignment='center',
-                   rotation='vertical',
-                   transform=graph.transFigure,
-                   fontsize=audittextsize)
-
-    def export_csv_data(self, fileName, file_type, graph, graphTitle):
-        if graphTitle == 'ThomsonData':
-            self.export_thomson_csv_data(fileName, file_type)
-        else:
-            self.export_time_csv_data(fileName, file_type, graph)
-
-    def export_time_csv_data(self, fileName, file_type, graph):
-        line = graph.gca().get_lines()[0].get_xydata()
-        np.savetxt(fileName.replace(file_type, 'csv'), line, delimiter=',')
-
-    def export_thomson_csv_data(self, fileName, file_type):
-        for i in range(1, 4):
-            sub = getattr(self, 'ax' + str(i))
-            datacaption = sub.get_title()
-            graphdata = self.get_graph_data(datacaption, self.framenumber)
-
-            np.savetxt(fileName.replace('ThomsonData', datacaption)
-                       .replace(file_type, 'csv'), graphdata, delimiter=',')
-
     def get_graph_data(self, datacaption, framenumber):
         key = ''
         for item in self.MDS_data_titles.items():
@@ -401,32 +361,6 @@ class tvMain:
                 break
 
         return self.MDS_data[key][1][framenumber]
-
-    def shotnumberInput(self):
-
-        try:
-            self.shotnumber = self.txtShotNumber.get()
-            if self.shotnumber == '':
-                pass
-
-            self.get_data_object(self.shotnumber)
-
-            if not self.data.does_shot_exist(self.shotnumber):
-                self.update_text.set("IP or Thomson not available in MDS for {}.".format(self.shotnumber))
-                return
-
-            self.update_text.set('Querying {} tree for {}'.format(treename, str(self.shotnumber)))
-
-            self.load_data(self.shotnumber)
-
-            self.populateGraphs(self.shotnumber)
-
-            self.update_text.set('Shot number {} loaded from tree.'.format(str(self.shotnumber)))
-        except Exception as e:
-            print(e)
-            self.update_text.set("An error has occurred, and has been written to the log.")
-            # logger.error(e.message)
-            # logger.error(e.__doc__)
 
     def populateGraphs(self, shotnumber):
         self.createTimeGraphs()
@@ -438,9 +372,6 @@ class tvMain:
         self.createRadialGraphs(max_ip_time)
 
         #TODO: set multi xdata location to max_ip_time
-
-    def radialGraphCursor_moved(self):
-        pass
 
     def getData(self, treename, requestedTDI):
         return self.data.get_tree_data('nstx', treename, requestedTDI)
@@ -533,6 +464,79 @@ class tvMain:
 
         updatestring = 'Massaged MDS data.'
         self.update_text.set(updatestring)
+
+    def export_graphs(self, shotid, file_type):
+        # foo = "export {} {}, include CSV: {} ".format(str(shotid), file_type, str(include_csv))
+        # print(foo)
+        shotnumber = str(shotid)
+
+        # YYYYMMDDTHH24MMSS
+        timestamp = datetime.datetime.isoformat(
+            datetime.datetime.today()).split('.')[0].replace('-', '').replace(':', '')
+
+        bar = ''
+        if self.include_csv.get():
+            bar = (file_type + ' and CSV')
+        else:
+            bar = file_type
+
+        updatestring = 'Images for {} saved in {} format'.format(shotid, bar)
+
+
+        if not os.path.exists(shotnumber):
+            os.makedirs(shotnumber)
+
+        baz = ['figure_a', 'figure_1']
+
+        for graphName in baz:
+            graph = getattr(self, graphName)
+
+            self.add_graph_thumbprint(graph)
+
+            graphTitle = ''
+            if '_1' in graphName:
+                graphTitle = 'ThomsonData'
+            else:
+                graphTitle = 'TimeData'
+
+            fileName = '{}/{}_{}_{}.{}'.format(shotnumber, shotnumber, graphTitle, timestamp,
+                                               file_type).replace(' ', '')
+            graph.savefig(fileName, dpi=defaultdpi, format=file_type, bbox_inches='tight', frameon=None)
+
+            if self.include_csv.get():
+                self.export_csv_data(fileName, file_type, graph, graphTitle)
+
+        self.update_text.set(updatestring)
+
+    def add_graph_thumbprint(self, graph):
+
+        thumbprinttext = userid + ' ' + self.txtShotNumber.get()
+
+        graph.text(.95,.85, thumbprinttext,
+                   horizontalalignment='right',
+                   verticalalignment='center',
+                   rotation='vertical',
+                   transform=graph.transFigure,
+                   fontsize=audittextsize)
+
+    def export_csv_data(self, fileName, file_type, graph, graphTitle):
+        if graphTitle == 'ThomsonData':
+            self.export_thomson_csv_data(fileName, file_type)
+        else:
+            self.export_time_csv_data(fileName, file_type, graph)
+
+    def export_time_csv_data(self, fileName, file_type, graph):
+        line = graph.gca().get_lines()[0].get_xydata()
+        np.savetxt(fileName.replace(file_type, 'csv'), line, delimiter=',')
+
+    def export_thomson_csv_data(self, fileName, file_type):
+        for i in range(1, 4):
+            sub = getattr(self, 'ax' + str(i))
+            datacaption = sub.get_title()
+            graphdata = self.get_graph_data(datacaption, self.framenumber)
+
+            np.savetxt(fileName.replace('ThomsonData', datacaption)
+                       .replace(file_type, 'csv'), graphdata, delimiter=',')
 
 def main():
     root.wm_title("Thomson Visualization")
