@@ -234,6 +234,7 @@ class tvMain:
         self.ax1.set_xlim(graphxmin, graphxmax)
         self.ax2.set_xlim(graphxmin, graphxmax)
         self.ax3.set_xlim(graphxmin, graphxmax)
+        self.radialgraphxmin, self.radialgraphxmax = graphxmin, graphxmax
         self.canvas_1.draw()
 
     def rangeOnSelect(self, xmin, xmax):
