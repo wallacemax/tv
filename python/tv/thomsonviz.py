@@ -86,9 +86,9 @@ class tvMain:
                          'IP': Ellipsis,
                          'WMHD': Ellipsis}
 
-        self.MDS_data_titles = {'NEF': 'Density (Ne)',
-                                'PEF': 'Pressure (Pe)',
-                                'TEF': 'Temperature (Te)',
+        self.MDS_data_titles = {'NEF': 'Electron Density',
+                                'PEF': 'Electron Pressure',
+                                'TEF': 'Electron Temperature',
                                 'IP': 'Plasma Current',
                                 'WMHD': 'Stored Energy'}
 
@@ -442,8 +442,19 @@ class tvMain:
         #     IP[foo] = IP[foo][0:endidx]
 
         #WMHD J to kJ
-        self.MDS_data['WMHD'][4] = [x/1000 for x in self.MDS_data['WMHD'][4]]
-        self.MDS_data['WMHD'][5] = 'kJ'
+
+        #change those labels
+        #TODO: put IP in MA
+        self.MDS_data['IP'][5] = '$I_P [MA]$'
+
+        #TODO: put NEF in m^-3
+        #self.MDS_data['NEF'][4] = [x/10e6 for x in self.MDS_data['NEF'][4]]
+        self.MDS_data['NEF'][5] = '$n_E   [cm^{-3}]$'
+        self.MDS_data['TEF'][5] = '$T_E   [kEV]$'
+        self.MDS_data['PEF'][5] = '$P_E   [kPa]$'
+
+        self.MDS_data['WMHD'][4] = [x/10e2 for x in self.MDS_data['WMHD'][4]]
+        self.MDS_data['WMHD'][5] = '$W_{MHD}   [kJ]$'
 
         # TODO: be clever and do in sigfigs
         #IP A to kA
