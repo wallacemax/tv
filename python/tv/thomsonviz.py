@@ -69,6 +69,8 @@ class tvMain:
 
         self.loadPreferences()
 
+        self.selectedTimeIndex = -1
+
         self.InitUI()
 
         self.MDS_data_nodes = [['NEF', 'ACTIVESPEC', 'MPTS.OUTPUT_DATA.BEST.FIT_NE'],
@@ -234,22 +236,6 @@ class tvMain:
         self.ax3.set_xlim(graphxmin, graphxmax)
         self.canvas_1.draw()
 
-    def updateRadialGraphTime(self, selected_time):
-        try:
-            # bar = [time_signal, time_units, radial_signal, radial_units, signal, units]
-            # MPL MouseEvent: xy=(456,424) xydata=(0.796994851319,0.273058346212) button=None dblclick=False inaxes=Axes(0.125,0.614815;0.775x0.285185)
-            nearest_frame = self.find_idx_nearest_value(self.MDS_data['NEF'][0], selected_time)
-            nearest_time = self.MDS_data['NEF'][0][nearest_frame]
-            timedelta = nearest_time - selected_time
-            self.updateRadialGraphs(nearest_frame, timedelta)
-            pass
-        except Exception as e:
-            self.update_text.set("An error was generated, and has been written to the log.")
-            # logger.error(e.message)
-            # logger.error(e.__doc__)
-
-        self.update_text.set("Displayed closest Thomson data to {0:.2f}ms.".format(selected_time*1000))
-
     def rangeOnSelect(self, xmin, xmax):
 
         rr = self.MDS_data['RR']
@@ -349,6 +335,33 @@ class tvMain:
 
         self.updateRadialGraphTime(selected_time)
 
+    def updateTimeGraphKeypress(self, direction):
+        if self.selectedTimeIndex == -1 or len(self.MDS_data['TEF'][0]) <= self.selectedTimeIndex + direction:
+            return
+
+        self.updateRadialGraphTime(self.MDS_data['TEF'][0][self.selectedTimeIndex + direction])
+
+    def updateRadialGraphTime(self, selected_time):
+        try:
+            self.selectedTimeIndex = self.find_idx_nearest_value(self.MDS_data['TEF'][0], selected_time)
+
+            # bar = [time_signal, time_units, radial_signal, radial_units, signal, units]
+            # MPL MouseEvent: xy=(456,424) xydata=(0.796994851319,0.273058346212) button=None dblclick=False inaxes=Axes(0.125,0.614815;0.775x0.285185)
+            nearest_frame = self.find_idx_nearest_value(self.MDS_data['NEF'][0], selected_time)
+            nearest_time = self.MDS_data['NEF'][0][nearest_frame]
+            timedelta = nearest_time - selected_time
+
+            self.selectedTimeIndex = nearest_frame
+
+            self.updateRadialGraphs(nearest_frame, timedelta)
+            pass
+        except Exception as e:
+            self.update_text.set("An error was generated, and has been written to the log.")
+            # logger.error(e.message)
+            # logger.error(e.__doc__)
+
+        self.update_text.set("Displayed closest Thomson data to {0:.2f}ms.".format(selected_time * 1000))
+
     def find_idx_nearest_value(self, target, val):
         idx = (np.abs(target-val)).argmin()
         return idx
@@ -366,8 +379,9 @@ class tvMain:
         self.createTimeGraphs()
 
         #bar = [time_signal, time_units, radial_signal, radial_units, signal, units]
-
-        max_ip_time = np.float64(self.MDS_data['IP'][0][np.argmax(self.MDS_data['IP'][4])])
+        maxindex = np.argmax(self.MDS_data['IP'][4])
+        max_ip_time = np.float64(self.MDS_data['IP'][0][maxindex])
+        self.selectedTimeIndex = maxindex
 
         self.createRadialGraphs(max_ip_time)
 
@@ -549,6 +563,9 @@ def main():
 
     root["bd"] = 0
     app = tvMain(root)
+
+    root.bind('<Left>', lambda event,arg=-1: tvMain.updateTimeGraphKeypress(app, arg))
+    root.bind('<Right>', lambda event,arg=1: tvMain.updateTimeGraphKeypress(app, arg))
 
     root.mainloop()  ### (3)
 
