@@ -48,7 +48,7 @@ radialgraphwidth = 6.5
 radialgraphratio = 1
 timegraphwidth = 6
 timegraphratio = 1
-audittextsize=6
+audittextsize=12
 
 treename = 'nstx'
 userid = os.getenv('LOGNAME')
@@ -539,13 +539,13 @@ class tvMain:
                        .replace(file_type, 'csv'), graphdata, delimiter=',')
 
 def main():
-    root.wm_title("Thomson Visualization")
-    w, h = root.winfo_screenwidth(), root.winfo_screenheight()
-    root.geometry("%dx%d+0+0" % (w, h))
+    center_window()
+    root.wm_title("ThomsonViz")
     root["bg"] = "white"
     root.tk_setPalette(background='white', foreground='black')
     root.grid_columnconfigure(0, uniform="also", minsize=512)
     root.grid_columnconfigure(1, uniform="also")
+    root.resizable(False, False)
 
     root["bd"] = 0
     app = tvMain(root)
@@ -555,6 +555,16 @@ def main():
 def on_closing():
     #maybe ask to save paramters or something
     sys.exit()
+
+def center_window(width=1268, height=760):
+    # get screen width and height
+    screen_width = root.winfo_screenwidth()
+    screen_height = root.winfo_screenheight()
+
+    # calculate position x and y coordinates
+    x = (screen_width/2) - (width/2)
+    y = (screen_height/2) - (height/2)
+    root.geometry('%dx%d+%d+%d' % (width, height, x, y))
 
 
 root = tk.Tk()
