@@ -1,0 +1,10 @@
+6/22/15
+add configuration for different tree
+add ability to enter and save different tree keys
+
+all plots shows from zero to 20-30% of maximum value
+user chooses minimum and maximum for axis
+y and x - enough tickmarks that make sense (ex: 0-2, .1, .2, .3) -- have to scale for reasonable tickmarks
+font - size 14pt Helvetica
+user provided y and x labels -- annotation window
+figure 6 from paper -- 2015 pop vol 22 page 056111 - http://scitation.aip.org/content/aip/journal/pop/22/5/10.1063/1.4921148
