@@ -203,9 +203,13 @@ class tvMain:
 
         # bar = [time_signal, time_units, radial_signal, radial_units, signal, units]
 
-        displayedTime = '{0:.2f}'.format(ne[0][framenumber]*1000) + 'ms'
+        selectedTime = '{0:.0f}'.format((ne[0][framenumber]+time_difference)*1000) + 'ms'
+        displayedTime = '{0:.0f}'.format(ne[0][framenumber]*1000) + 'ms'
         displayedTimeDifference = '{0:.2f}'.format(time_difference*1000) + 'ms'
-        self.figure_1.suptitle('Data displayed for {}, {} different'.format(displayedTime, displayedTimeDifference))  #3.1502ms
+        self.figure_1.suptitle('$T_{TS}$' + ' = {}'.format(displayedTime) +
+                               ', $\Delta T$={}'.format(displayedTimeDifference))
+        #self.figure_1.suptitle('Data displayed for {}, {} different'
+            # .format(displayedTime, displayedTimeDifference))  #3.1502ms
 
         self.ax1.clear()
         self.ax1.plot(ne[2], ne[4][:, framenumber], marker='.', linestyle='None', c='red')
