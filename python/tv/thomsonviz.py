@@ -27,6 +27,8 @@ except ImportError:
     import tkinter as tk
     # logger.debug('Using tkinter for Python3')
 
+import tkFont
+
 import matplotlib
 matplotlib.use('agg')
 matplotlib.use('TkAgg')
@@ -95,6 +97,9 @@ class tvMain:
         self.update_text.set('Please input shot number for visualization.')
 
     def InitUI(self):
+
+        self.displayFont = tkFont.Font(family='Calibri', size=18)
+
         self.drawShotHeader()
 
         self.drawFooter()
@@ -112,10 +117,10 @@ class tvMain:
         self.entryFrame = tk.Frame(self.master)
         self.entryFrame.grid(row=0, column=0, columnspan=2, sticky=tk.NSEW)
 
-        self.lblShot = tk.Label(self.entryFrame, text='Shot Number:')
+        self.lblShot = tk.Label(self.entryFrame, text='Shot Number:', font=self.displayFont)
         self.lblShot.grid(row=0, column=0, sticky=tk.NSEW)
 
-        self.txtShotNumber = tk.Entry(self.entryFrame, width=12, fg='red', justify='center')
+        self.txtShotNumber = tk.Entry(self.entryFrame, width=12, fg='red', justify='center', font=self.displayFont)
         self.txtShotNumber.insert(0, '205088')
         self.txtShotNumber.bind("<Return>", lambda event: self.shotnumberInput())
         self.txtShotNumber.grid(row=0, column=1, sticky=tk.NSEW)
@@ -132,23 +137,25 @@ class tvMain:
         self.btnResetZoom = tk.Button(text="Reset Zoom",
                                       command=lambda:
                                       self.changeRadialRange(self.radialmachinexmin, self.radialmachinexmax),
-                                      master=self.master)
+                                      master=self.master,
+                                      font = self.displayFont)
         self.btnResetZoom.grid(row=3, column=0, sticky=tk.NS)
 
         self.exportFrame = tk.Frame(self.master)
         self.exportFrame.grid(row=3, column=0, sticky=tk.NS+tk.E)
 
         btnEPS = tk.Button(text="Print EPS", command=lambda: self.export_graphs(self.txtShotNumber.get(), 'EPS'),
-                           master=self.exportFrame)
+                           master=self.exportFrame, font=self.displayFont)
         btnEPS.grid(row=0, column=0, sticky=tk.NSEW)
         btnPNG = tk.Button(text="Print PNG", command=lambda: self.export_graphs(self.txtShotNumber.get(), 'PNG'),
-                           master=self.exportFrame)
+                           master=self.exportFrame, font=self.displayFont)
         btnPNG.grid(row=0, column=1, sticky=tk.NSEW)
         self.include_csv = tk.BooleanVar()
-        self.chkCSV = tk.Checkbutton(text="Save CSV", variable=self.include_csv, master=self.exportFrame)
+        self.chkCSV = tk.Checkbutton(text="Save CSV", variable=self.include_csv, master=self.exportFrame,
+                                     font=self.displayFont)
         self.chkCSV.grid(row=0, column=2, sticky=tk.NSEW)
 
-        self.lblOutput = tk.Label(textvariable=self.update_text)
+        self.lblOutput = tk.Label(textvariable=self.update_text, font=self.displayFont)
         self.lblOutput.grid(row=3, column=1, sticky=tk.NS)
 
         self.update_text.set("Drew footer.")
