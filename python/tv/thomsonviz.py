@@ -107,25 +107,10 @@ class tvMain:
 
         self.update_text.set("Loaded preferences from file (sort of).")
 
-    def drawFooter(self):
-        # footer
-        btnEPS = tk.Button(text="Print EPS", command=lambda: self.export_graphs(self.txtShotNumber.get(), 'EPS'))
-        btnEPS.grid(row=3, column=0, sticky=tk.W)
-        btnPNG = tk.Button(text="Print PNG", command=lambda: self.export_graphs(self.txtShotNumber.get(), 'PNG'))
-        btnPNG.grid(row=3, column=0)
-        self.include_csv = tk.BooleanVar()
-        self.chkCSV = tk.Checkbutton(text="Save CSV", variable=self.include_csv)
-        self.chkCSV.grid(row=3, column=0, sticky=tk.E)
-
-        self.lblOutput = tk.Label(textvariable=self.update_text)
-        self.lblOutput.grid(row=3, column=1)
-
-        self.update_text.set("Drew footer.")
-
     def drawShotHeader(self):
         # setup shot frame
         self.entryFrame = tk.Frame(self.master)
-        self.entryFrame.grid(row=0, column=0, sticky=tk.W)
+        self.entryFrame.grid(row=0, column=0, sticky=tk.W+tk.E+tk.N+tk.S)
 
         self.lblShot = tk.Label(self.entryFrame, text='Shot Number:')
         self.lblShot.pack(side=tk.LEFT)
@@ -134,10 +119,10 @@ class tvMain:
         self.txtShotNumber.insert(0, '205088')
         self.txtShotNumber.pack(side=tk.LEFT)
         self.txtShotNumber.bind("<Return>", lambda event: self.shotnumberInput())
-        #070616 remove button
-        #self.playLogo = tk.PhotoImage(file="play.gif")
-        #self.btnShot = tk.Button(self.entryFrame, image=self.playLogo, command=self.shotnumberInput)
-        #self.btnShot.pack(side=tk.LEFT)
+        # 070616 remove button
+        # self.playLogo = tk.PhotoImage(file="play.gif")
+        # self.btnShot = tk.Button(self.entryFrame, image=self.playLogo, command=self.shotnumberInput)
+        # self.btnShot.pack(side=tk.LEFT)
 
         # lblTime = tk.Label(text=strftime('%H:%M:%S'), background='white')
         # lblTime.grid(row=0, column=0)
@@ -146,15 +131,98 @@ class tvMain:
 
         self.headerLogo = tk.PhotoImage(file=headerlogofilepath)
         lblLogo = tk.Label(image=self.headerLogo)
-        lblLogo.grid(row=0, column=1)
+        lblLogo.grid(row=0, column=1, sticky=tk.W+tk.E+tk.N+tk.S)
 
         self.update_text.set("Drew shot header.")
+
+    def drawFooter(self):
+        # footer
+
+        self.btnResetZoom = tk.Button(text="Reset Zoom",
+                                      command=lambda:
+                                      self.changeRadialRange(self.radialmachinexmin, self.radialmachinexmax),
+                                      master=self.master)
+        self.btnResetZoom.grid(row=3, column=0, sticky=tk.NS)
+
+        self.exportFrame = tk.Frame(self.master)
+        self.exportFrame.grid(row=3, column=0, sticky=tk.NS+tk.E)
+
+        btnEPS = tk.Button(text="Print EPS", command=lambda: self.export_graphs(self.txtShotNumber.get(), 'EPS'),
+                           master=self.exportFrame)
+        btnEPS.grid(row=0, column=0, sticky=tk.NSEW)
+        btnPNG = tk.Button(text="Print PNG", command=lambda: self.export_graphs(self.txtShotNumber.get(), 'PNG'),
+                           master=self.exportFrame)
+        btnPNG.grid(row=0, column=1, sticky=tk.NSEW)
+        self.include_csv = tk.BooleanVar()
+        self.chkCSV = tk.Checkbutton(text="Save CSV", variable=self.include_csv, master=self.exportFrame)
+        self.chkCSV.grid(row=0, column=2, sticky=tk.NSEW)
+
+        self.lblOutput = tk.Label(textvariable=self.update_text)
+        self.lblOutput.grid(row=3, column=1, sticky=tk.NS)
+
+        self.update_text.set("Drew footer.")
+
+    def createTimeGraphs(self):
+
+        IP = self.MDS_data['IP']
+        wmhd = self.MDS_data['WMHD']
+
+        # bar = [time_signal, time_units, radial_signal, radial_units, signal, units]
+
+        maxscale = np.amax([np.amax(IP[0]), np.amax(wmhd[0])])
+
+        self.figure_a = Figure(figsize=(timegraphwidth,
+                                        timegraphwidth * timegraphratio), dpi=defaultdpi, facecolor='white')
+        self.ax_a = self.figure_a.add_subplot(2, 1, 1)
+        self.ax_a.set_ylabel(IP[5])
+        # TODO: round ylimit up to nearest hundred
+        self.ax_a.set_ylim([0, self.roundtohundred(np.amax(IP[4]))])
+        self.ax_a.set_xlim([0, maxscale])
+        self.ax_a.ticklabel_format(axis='y', style='sci', scilimits=(-2, 2))
+        self.ax_a.set_title(self.MDS_data_titles['IP'])
+        self.fig_a, = self.ax_a.plot(IP[0], IP[4], marker='.', linestyle='None')
+
+        self.ax_b = self.figure_a.add_subplot(2, 1, 2)
+        self.ax_b.set_xlabel('Time [s]')
+        self.ax_b.set_ylabel(wmhd[5])
+        # TODO: round ylimit up to nearest hundred
+        self.ax_b.set_ylim([0, self.roundtohundred(np.amax(wmhd[4]))])
+        self.ax_b.set_xlim([0, maxscale])
+        self.ax_b.ticklabel_format(axis='y', style='sci', scilimits=(-2, 2))
+        self.ax_b.set_title(self.MDS_data_titles['WMHD'])
+        self.fig_b, = self.ax_b.plot(wmhd[0], wmhd[4], marker='.', linestyle='None')
+
+        self.figure_a.subplots_adjust(hspace=.7, bottom=0.13)
+
+        self.canvas_a = FigureCanvasTkAgg(self.figure_a, master=self.master)
+
+        self.multi = MultiCursor(self.canvas_a, (self.ax_a, self.ax_b), color='g', lw=2, horizOn=False, vertOn=True)
+
+        self.canvas_a.mpl_connect('motion_notify_event', self.TimeGraphMove)
+
+        self.canvas_a.show()
+        self.canvas_a.get_tk_widget().grid(row=2, column=1, sticky=tk.E+tk.W+tk.N+tk.S)
+
+    def TimeGraphMove(self, event):
+
+        if event.xdata == None:
+            return
+
+        selected_time = event.xdata
+
+        self.updateRadialGraphTime(selected_time)
+
+    def updateTimeGraphKeypress(self, direction):
+        if self.selectedTimeIndex == -1 or len(self.MDS_data['TEF'][0]) <= self.selectedTimeIndex + direction:
+            return
+
+        self.updateRadialGraphTime(self.MDS_data['TEF'][0][self.selectedTimeIndex + direction])
 
     def createRadialGraphs(self, selected_time):
         # logger.debug('Creating radial graphs for {}'.format(selected_time))
 
-        radialFrame = tk.Frame(self.master)
-        radialFrame.grid(row=2, column=0)
+        #radialFrame = tk.Frame(self.master)
+        #radialFrame.grid(row=2, column=0, sticky=tk.W+tk.E+tk.N+tk.S)
 
         # pdb.set_trace()
         self.figure_1 = figure(figsize=(radialgraphwidth,
@@ -170,10 +238,10 @@ class tvMain:
 
         self.figure_1.subplots_adjust(hspace=.25)
 
-        self.canvas_1 = FigureCanvasTkAgg(self.figure_1, master=radialFrame)
+        self.canvas_1 = FigureCanvasTkAgg(self.figure_1, master=self.master)
 
         self.canvas_1.show()
-        self.canvas_1.get_tk_widget().grid(row=0, column=0)
+        self.canvas_1.get_tk_widget().grid(row=2, column=0, sticky=tk.W+tk.E+tk.N+tk.S)
 
         self.span1 = SpanSelector(self.ax1, self.rangeOnSelect, 'horizontal', useblit=True,
                                   rectprops=dict(alpha=0.5, facecolor='red'))
@@ -181,12 +249,6 @@ class tvMain:
                                   rectprops=dict(alpha=0.5, facecolor='red'))
         self.span3 = SpanSelector(self.ax3, self.rangeOnSelect, 'horizontal', useblit=True,
                                   rectprops=dict(alpha=0.5, facecolor='red'))
-
-        self.btnResetZoom = tk.Button(text="Reset Zoom",
-                                      command=lambda:
-                                      self.changeRadialRange(self.radialmachinexmin, self.radialmachinexmax),
-                                      master=radialFrame)
-        self.btnResetZoom.grid(row=2, column=0)
 
         self.updateRadialGraphTime(selected_time)
 
@@ -233,6 +295,27 @@ class tvMain:
         self.changeRadialRange(self.radialgraphxmin, self.radialgraphxmax)
 
         self.canvas_1.draw()
+
+    def updateRadialGraphTime(self, selected_time):
+        try:
+            self.selectedTimeIndex = self.find_idx_nearest_value(self.MDS_data['TEF'][0], selected_time)
+
+            # bar = [time_signal, time_units, radial_signal, radial_units, signal, units]
+            # MPL MouseEvent: xy=(456,424) xydata=(0.796994851319,0.273058346212) button=None dblclick=False inaxes=Axes(0.125,0.614815;0.775x0.285185)
+            nearest_frame = self.find_idx_nearest_value(self.MDS_data['NEF'][0], selected_time)
+            nearest_time = self.MDS_data['NEF'][0][nearest_frame]
+            timedelta = nearest_time - selected_time
+
+            self.selectedTimeIndex = nearest_frame
+
+            self.updateRadialGraphs(nearest_frame, timedelta)
+            pass
+        except Exception as e:
+            self.update_text.set("An error was generated, and has been written to the log.")
+            # logger.error(e.message)
+            # logger.error(e.__doc__)
+
+        self.update_text.set("Displayed closest Thomson data to {0:.2f}ms.".format(selected_time * 1000))
 
     def changeRadialRange(self, graphxmin, graphxmax):
         self.ax1.set_xlim(graphxmin, graphxmax)
@@ -289,83 +372,6 @@ class tvMain:
 
     def roundtohundred(self, x):
         return int(math.ceil(x / 100.0)) * 100
-
-    def createTimeGraphs(self):
-
-        IP = self.MDS_data['IP']
-        wmhd = self.MDS_data['WMHD']
-
-        #bar = [time_signal, time_units, radial_signal, radial_units, signal, units]
-
-        maxscale = np.amax([np.amax(IP[0]), np.amax(wmhd[0])])
-
-        self.figure_a = Figure(figsize=(timegraphwidth,
-                                        timegraphwidth * timegraphratio), dpi=defaultdpi, facecolor='white')
-        self.ax_a = self.figure_a.add_subplot(2, 1, 1)
-        self.ax_a.set_ylabel(IP[5])
-        #TODO: round ylimit up to nearest hundred
-        self.ax_a.set_ylim([0, self.roundtohundred(np.amax(IP[4]))])
-        self.ax_a.set_xlim([0, maxscale])
-        self.ax_a.ticklabel_format(axis='y', style='sci', scilimits=(-2,2))
-        self.ax_a.set_title(self.MDS_data_titles['IP'])
-        self.fig_a, = self.ax_a.plot(IP[0], IP[4], marker='.', linestyle='None')
-
-        self.ax_b = self.figure_a.add_subplot(2, 1, 2)
-        self.ax_b.set_xlabel('Time [s]')
-        self.ax_b.set_ylabel(wmhd[5])
-        # TODO: round ylimit up to nearest hundred
-        self.ax_b.set_ylim([0, self.roundtohundred(np.amax(wmhd[4]))])
-        self.ax_b.set_xlim([0, maxscale])
-        self.ax_b.ticklabel_format(axis='y', style='sci', scilimits=(-2,2))
-        self.ax_b.set_title(self.MDS_data_titles['WMHD'])
-        self.fig_b, = self.ax_b.plot(wmhd[0], wmhd[4], marker='.', linestyle='None')
-
-        self.figure_a.subplots_adjust(hspace=.7, bottom=0.13)
-
-        self.canvas_a = FigureCanvasTkAgg(self.figure_a, master=self.master)
-
-        self.multi = MultiCursor(self.canvas_a, (self.ax_a, self.ax_b), color='g', lw=2, horizOn=False, vertOn=True)
-
-        self.canvas_a.mpl_connect('motion_notify_event', self.TimeGraphMove)
-
-        self.canvas_a.show()
-        self.canvas_a.get_tk_widget().grid(row=2, column=1)
-
-    def TimeGraphMove(self, event):
-
-        if event.xdata == None:
-            return
-
-        selected_time = event.xdata
-
-        self.updateRadialGraphTime(selected_time)
-
-    def updateTimeGraphKeypress(self, direction):
-        if self.selectedTimeIndex == -1 or len(self.MDS_data['TEF'][0]) <= self.selectedTimeIndex + direction:
-            return
-
-        self.updateRadialGraphTime(self.MDS_data['TEF'][0][self.selectedTimeIndex + direction])
-
-    def updateRadialGraphTime(self, selected_time):
-        try:
-            self.selectedTimeIndex = self.find_idx_nearest_value(self.MDS_data['TEF'][0], selected_time)
-
-            # bar = [time_signal, time_units, radial_signal, radial_units, signal, units]
-            # MPL MouseEvent: xy=(456,424) xydata=(0.796994851319,0.273058346212) button=None dblclick=False inaxes=Axes(0.125,0.614815;0.775x0.285185)
-            nearest_frame = self.find_idx_nearest_value(self.MDS_data['NEF'][0], selected_time)
-            nearest_time = self.MDS_data['NEF'][0][nearest_frame]
-            timedelta = nearest_time - selected_time
-
-            self.selectedTimeIndex = nearest_frame
-
-            self.updateRadialGraphs(nearest_frame, timedelta)
-            pass
-        except Exception as e:
-            self.update_text.set("An error was generated, and has been written to the log.")
-            # logger.error(e.message)
-            # logger.error(e.__doc__)
-
-        self.update_text.set("Displayed closest Thomson data to {0:.2f}ms.".format(selected_time * 1000))
 
     def find_idx_nearest_value(self, target, val):
         idx = (np.abs(target-val)).argmin()
@@ -449,16 +455,16 @@ class tvMain:
 
         #change those labels
         #TODO: put IP in MA
-        self.MDS_data['IP'][5] = '$I_P [MA]$'
+        self.MDS_data['IP'][5] = '$I_P\;[MA]$'
 
         #TODO: put NEF in m^-3
         #self.MDS_data['NEF'][4] = [x/10e6 for x in self.MDS_data['NEF'][4]]
-        self.MDS_data['NEF'][5] = '$n_E   [cm^{-3}]$'
-        self.MDS_data['TEF'][5] = '$T_E   [kEV]$'
-        self.MDS_data['PEF'][5] = '$P_E   [kPa]$'
+        self.MDS_data['NEF'][5] = '$n_E\;[cm^{-3}]$'
+        self.MDS_data['TEF'][5] = '$T_E\;[kEV]$'
+        self.MDS_data['PEF'][5] = '$P_E\;[kPa]$'
 
         self.MDS_data['WMHD'][4] = [x/10e2 for x in self.MDS_data['WMHD'][4]]
-        self.MDS_data['WMHD'][5] = '$W_{MHD}   [kJ]$'
+        self.MDS_data['WMHD'][5] = '$W_{MHD}\;[kJ]$'
 
         # TODO: be clever and do in sigfigs
         #IP A to kA
@@ -573,9 +579,11 @@ def main():
     root.wm_title("ThomsonViz")
     root["bg"] = "white"
     root.tk_setPalette(background='white', foreground='black')
-    root.grid_columnconfigure(0, uniform="also", minsize=512)
-    root.grid_columnconfigure(1, uniform="also")
-    root.resizable(False, False)
+    for foo in [0, 1]:
+        root.grid_columnconfigure(foo, weight=1)
+    for foo in [0, 2]:
+        root.grid_rowconfigure(foo, weight=1)
+    root.resizable(True, True)
 
     root["bd"] = 0
     app = tvMain(root)
