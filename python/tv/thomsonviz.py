@@ -110,28 +110,19 @@ class tvMain:
     def drawShotHeader(self):
         # setup shot frame
         self.entryFrame = tk.Frame(self.master)
-        self.entryFrame.grid(row=0, column=0, sticky=tk.W+tk.E+tk.N+tk.S)
+        self.entryFrame.grid(row=0, column=0, columnspan=2, sticky=tk.NSEW)
 
         self.lblShot = tk.Label(self.entryFrame, text='Shot Number:')
-        self.lblShot.pack(side=tk.LEFT)
+        self.lblShot.grid(row=0, column=0, sticky=tk.NSEW)
 
         self.txtShotNumber = tk.Entry(self.entryFrame, width=12, fg='red', justify='center')
         self.txtShotNumber.insert(0, '205088')
-        self.txtShotNumber.pack(side=tk.LEFT)
         self.txtShotNumber.bind("<Return>", lambda event: self.shotnumberInput())
-        # 070616 remove button
-        # self.playLogo = tk.PhotoImage(file="play.gif")
-        # self.btnShot = tk.Button(self.entryFrame, image=self.playLogo, command=self.shotnumberInput)
-        # self.btnShot.pack(side=tk.LEFT)
-
-        # lblTime = tk.Label(text=strftime('%H:%M:%S'), background='white')
-        # lblTime.grid(row=0, column=0)
-        # lblUserID = tk.Label(text=userid, background='white')
-        # lblUserID.grid(row=0, column=0, sticky=tk.E)
+        self.txtShotNumber.grid(row=0, column=1, sticky=tk.NSEW)
 
         self.headerLogo = tk.PhotoImage(file=headerlogofilepath)
-        lblLogo = tk.Label(image=self.headerLogo)
-        lblLogo.grid(row=0, column=1, sticky=tk.W+tk.E+tk.N+tk.S)
+        lblLogo = tk.Label(self.entryFrame, image=self.headerLogo)
+        lblLogo.grid(row=0, column=2, columnspan=2, sticky=tk.NSEW)
 
         self.update_text.set("Drew shot header.")
 
