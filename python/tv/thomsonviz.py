@@ -98,7 +98,7 @@ class tvMain:
 
     def InitUI(self):
 
-        self.displayFont = tkFont.Font(family='Helvetica', size=16)
+        self.displayFont = tkFont.Font(family='Bitstream Vera Sans', size=16)
 
         self.drawShotHeader()
 
