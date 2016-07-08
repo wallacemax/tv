@@ -98,7 +98,7 @@ class tvMain:
 
     def InitUI(self):
 
-        self.displayFont = tkFont.Font(family='Calibri', size=18)
+        self.displayFont = tkFont.Font(family='Helvetica', size=16)
 
         self.drawShotHeader()
 
@@ -115,7 +115,8 @@ class tvMain:
     def drawShotHeader(self):
         # setup shot frame
         self.entryFrame = tk.Frame(self.master)
-        self.entryFrame.grid(row=0, column=0, columnspan=2, sticky=tk.NSEW)
+        self.entryFrame.grid(row=0, column=0, sticky=tk.NSEW)
+        self.entryFrame.grid_rowconfigure(0, weight=1)
 
         self.lblShot = tk.Label(self.entryFrame, text='Shot Number:', font=self.displayFont)
         self.lblShot.grid(row=0, column=0, sticky=tk.NSEW)
@@ -126,37 +127,39 @@ class tvMain:
         self.txtShotNumber.grid(row=0, column=1, sticky=tk.NSEW)
 
         self.headerLogo = tk.PhotoImage(file=headerlogofilepath)
-        lblLogo = tk.Label(self.entryFrame, image=self.headerLogo)
-        lblLogo.grid(row=0, column=2, columnspan=2, sticky=tk.NSEW)
+        lblLogo = tk.Label(self.master, image=self.headerLogo)
+        lblLogo.grid(row=0, column=1, sticky=tk.NSEW)
 
         self.update_text.set("Drew shot header.")
 
     def drawFooter(self):
         # footer
 
+        self.exportFrame = tk.Frame(self.master)
+        self.exportFrame.grid(row=3, column=0, sticky=tk.NSEW)
+        self.exportFrame.grid_rowconfigure(0, weight=1)
+
         self.btnResetZoom = tk.Button(text="Reset Zoom",
                                       command=lambda:
                                       self.changeRadialRange(self.radialmachinexmin, self.radialmachinexmax),
-                                      master=self.master,
-                                      font = self.displayFont)
-        self.btnResetZoom.grid(row=3, column=0, sticky=tk.NS)
+                                      master=self.exportFrame,
+                                      font=self.displayFont)
 
-        self.exportFrame = tk.Frame(self.master)
-        self.exportFrame.grid(row=3, column=0, sticky=tk.NS+tk.E)
+        self.btnResetZoom.grid(row=0, column=0, sticky=tk.NSEW)
 
         btnEPS = tk.Button(text="Print EPS", command=lambda: self.export_graphs(self.txtShotNumber.get(), 'EPS'),
                            master=self.exportFrame, font=self.displayFont)
-        btnEPS.grid(row=0, column=0, sticky=tk.NSEW)
+        btnEPS.grid(row=0, column=1, sticky=tk.NSEW)
         btnPNG = tk.Button(text="Print PNG", command=lambda: self.export_graphs(self.txtShotNumber.get(), 'PNG'),
                            master=self.exportFrame, font=self.displayFont)
-        btnPNG.grid(row=0, column=1, sticky=tk.NSEW)
+        btnPNG.grid(row=0, column=2, sticky=tk.NSEW)
         self.include_csv = tk.BooleanVar()
         self.chkCSV = tk.Checkbutton(text="Save CSV", variable=self.include_csv, master=self.exportFrame,
                                      font=self.displayFont)
-        self.chkCSV.grid(row=0, column=2, sticky=tk.NSEW)
+        self.chkCSV.grid(row=0, column=3, sticky=tk.NSEW)
 
-        self.lblOutput = tk.Label(textvariable=self.update_text, font=self.displayFont)
-        self.lblOutput.grid(row=3, column=1, sticky=tk.NS)
+        self.lblOutput = tk.Label(self.master, textvariable=self.update_text, font=self.displayFont)
+        self.lblOutput.grid(row=3, column=1, sticky=tk.NSEW)
 
         self.update_text.set("Drew footer.")
 
@@ -581,6 +584,7 @@ def main():
         root.grid_columnconfigure(foo, weight=1)
     for foo in [0, 2]:
         root.grid_rowconfigure(foo, weight=1)
+    root.grid_rowconfigure(2, minsize=512)
     root.resizable(True, True)
 
     root["bd"] = 0
