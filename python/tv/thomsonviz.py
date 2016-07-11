@@ -44,6 +44,7 @@ from matplotlib.widgets import SpanSelector
 import math
 
 import pdb
+import pickle
 
 defaultdpi = 100
 radialgraphwidth = 6.5
@@ -54,6 +55,7 @@ audittextsize=12
 
 treename = 'nstx'
 userid = os.getenv('LOGNAME')
+userpath = '~/{}/'.format(userid)
 
 include_csv = 0
 
@@ -61,6 +63,8 @@ plotfont = {'family': 'Bitstream Vera Sans', 'size': 12}
 matplotlib.rc('font', **plotfont)
 
 headerlogofilepath = "NSTX-U_logo_thick_font_transparent.gif"
+
+import PreferencesDialog
 
 class tvMain:
     def __init__(self, master):
@@ -103,14 +107,6 @@ class tvMain:
         self.drawShotHeader()
 
         self.drawFooter()
-
-    def loadPreferences(self):
-        #hooge stub
-
-        self.radialgraphxmin = 0
-        self.radialgraphxmax = 180
-
-        self.update_text.set("Loaded preferences from file (sort of).")
 
     def drawShotHeader(self):
         # setup shot frame
@@ -160,6 +156,10 @@ class tvMain:
 
         self.lblOutput = tk.Label(self.master, textvariable=self.update_text, font=self.displayFont)
         self.lblOutput.grid(row=3, column=1, sticky=tk.NSEW)
+
+        btnPreferences = tk.Button(text="Preferences...", command=lambda: self.showPreferences(),
+                            font = self.displayFont)
+        btnPreferences.grid(row=4, column=0, sticky=tk.NS)
 
         self.update_text.set("Drew footer.")
 
@@ -544,6 +544,52 @@ class tvMain:
             np.savetxt(fileName.replace('ThomsonData', datacaption)
                        .replace(file_type, 'csv'), graphdata, delimiter=',')
 
+    def showPreferences(self):
+        d = PreferencesDialog.PreferencesDialog(self.master)
+        #root.wait_window(d)
+
+    def savePreferences(self):
+        with open(self.getPreferencesFileName(), 'wb') as f:
+            pickle.dump(self.preferences, f, pickle.HIGHEST_PROTOCOL)
+
+    def getPreferencesFileName(self):
+        preffilename = '{}.pref'.format(userid)
+
+        #are we on the cluster?  if so, look in *their* directory
+        if os.path.exists(userpath + preffilename):
+            preffilename = userpath + preffilename
+
+        return preffilename
+
+    def loadPreferences(self):
+
+        try:
+            with open(self.getPreferencesFileName(), 'rb') as f:
+                self.preferences = pickle.load(f)
+                self.update_text.set('Loaded preferences.')
+        except IOError:
+            self.createDefaultPreferences()
+
+    def createDefaultPreferences(self):
+        prefs = {'font_size':['Font Size', 12],
+            'radialgraphxmin':['Radial Plot Min', 0],
+            'radialgraphxmax':['Radial Plot Max', 180],
+            '1ylabelmin':['n_E Minimum', 0],
+            '1ylabelmax':['n_E Maximum', -1],
+            '2ylabelmin':['T_E Minimum', 0],
+            '2ylabelmax':['T_E Maximum', -1],
+            '3ylabelmin':['P_E Minimum', 0],
+            '3ylabelmax':['P_E Maximum', -1],
+            'mainwindowheight':['', 760],
+            'mainwindowwidth':['', 1268]}
+
+        self.preferences = prefs
+
+        self.savePreferences()
+
+        self.update_text.set('Created default preferences.')
+
+
 def main():
     center_window()
     root.wm_title("ThomsonViz")
@@ -561,6 +607,8 @@ def main():
 
     root.bind('<Left>', lambda event,arg=-1: tvMain.updateTimeGraphKeypress(app, arg))
     root.bind('<Right>', lambda event,arg=1: tvMain.updateTimeGraphKeypress(app, arg))
+
+    root.lift()
 
     root.mainloop()  ### (3)
 
