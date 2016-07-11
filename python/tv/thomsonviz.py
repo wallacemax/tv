@@ -351,7 +351,7 @@ class tvMain:
             self.get_data_object(self.shotnumber)
 
             if not self.data.does_shot_exist(self.shotnumber):
-                self.update_text.set("IP or Thomson not available in MDS for {}.".format(self.shotnumber))
+                self.update_text.set("Data traces not available in MDS for {}.".format(self.shotnumber))
                 return
 
             self.update_text.set('Querying {} tree for {}'.format(treename, str(self.shotnumber)))
@@ -409,17 +409,9 @@ class tvMain:
             self.data = OMFITdata.OMFIT_shot_data(shotnumber)
 
     def load_data(self, shotnumber):
-        # [['NEF', 'ACTIVESPEC', 'MPTS.OUTPUT_DATA.BEST.NEF'],
-        #  ['PEF', 'ACTIVESPEC', 'MPTS.OUTPUT_DATA.BEST.PEF'],
-        #  ['TEF', 'ACTIVESPEC', 'MPTS.OUTPUT_DATA.BEST.TEF'],
-        #  ['IP', 'WF', 'IP'],
-        #  ['WMHD', 'EFIT01', 'RESULTS.AEQDSK.WMHD']
-        #  ]
 
         for foo in self.MDS_data_nodes:
             self.MDS_data[foo[0]] = self.getData(foo[1], foo[2])
-            # TODO: and somehow merge into the graphs.  how to tell linear from radial?
-            # stuff into figures, somehow, automagically and with correct x grid deviations
             self.update_text.set('Retrieved data for {}'.format(foo[0]))
 
         self.update_text.set('Data loaded from tree for {}'.format(shotnumber))
@@ -472,33 +464,6 @@ class tvMain:
         #self.MDS_data['IP'][4] = [x / 1000 for x in self.MDS_data['IP'][4]]
         #self.MDS_data['IP'][5] = 'kA'
 
-        # cpl_tuple = self.MDS_data['IP']
-        # cpl = []
-        # cpl.append(list(cpl_tuple[0]))
-        # cpl.append(list(cpl_tuple[1]))
-        # cpl[1] = [x/1000 for x in cpl[1]]
-        # cpl.append('MA')
-        # cpl.append('Time [s]')
-        # self.MDS_data['IP'] = cpl
-        #
-        # wmhd_tuple = self.MDS_data['WMHD']
-        # wmhd = []
-        # wmhd.append(list(wmhd_tuple[0]))
-        # wmhd.append(list(wmhd_tuple[1]))
-        # wmhd[1] = [x/1000 for x in wmhd[1]]
-        # wmhd.append('kJ')
-        # wmhd.append('Time [s]')
-        # self.MDS_data['WMHD'] = wmhd
-        #
-        # for foo in ['TEF', 'NEF', 'PEF']:
-        #     bar_tuple = self.MDS_data[foo]
-        #     bar = []
-        #     bar.append(list(bar_tuple[1]))
-        #     bar.append(list(bar_tuple[0].transpose()))
-        #     bar.append(str(bar_tuple[2]))
-        #     bar.append('Radius [cm]')
-        #     self.MDS_data[foo] = bar
-
         updatestring = 'Massaged MDS data.'
         self.update_text.set(updatestring)
 
@@ -520,9 +485,6 @@ class tvMain:
         updatestring = 'Images for {} saved in {} format'.format(shotid, bar)
 
 
-        if not os.path.exists(shotnumber):
-            os.makedirs(shotnumber)
-
         baz = ['figure_a', 'figure_1']
 
         for graphName in baz:
@@ -536,14 +498,21 @@ class tvMain:
             else:
                 graphTitle = 'TimeData'
 
-            fileName = '{}/{}_{}_{}.{}'.format(shotnumber, shotnumber, graphTitle, timestamp,
-                                               file_type).replace(' ', '')
-            graph.savefig(fileName, dpi=defaultdpi, format=file_type, bbox_inches='tight', frameon=None)
+            fileName = self.export_graph_image(file_type, graph, graphTitle, shotnumber, timestamp)
 
             if self.include_csv.get():
                 self.export_csv_data(fileName, file_type, graph, graphTitle)
 
         self.update_text.set(updatestring)
+
+    def export_graph_image(self, file_type, graph, graphTitle, shotnumber, timestamp):
+        # TODO: save to user directory, if avail, otherwise do the shotnumber directory thing
+        if not os.path.exists(shotnumber):
+            os.makedirs(shotnumber)
+        fileName = '{}/{}_{}_{}.{}'.format(shotnumber, shotnumber, graphTitle, timestamp,
+                                           file_type).replace(' ', '')
+        graph.savefig(fileName, dpi=defaultdpi, format=file_type, bbox_inches='tight', frameon=None)
+        return fileName
 
     def add_graph_thumbprint(self, graph):
 
@@ -596,7 +565,7 @@ def main():
     root.mainloop()  ### (3)
 
 def on_closing():
-    #maybe ask to save paramters or something
+    #TODO: save parameters or something
     sys.exit()
 
 def center_window(width=1268, height=760):
