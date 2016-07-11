@@ -159,7 +159,7 @@ class tvMain:
 
         btnPreferences = tk.Button(text="Preferences...", command=lambda: self.showPreferences(),
                             font = self.displayFont)
-        btnPreferences.grid(row=4, column=0, sticky=tk.NS)
+        btnPreferences.grid(row=4, column=0, sticky=tk.NS + tk.E)
 
         self.update_text.set("Drew footer.")
 
@@ -545,7 +545,7 @@ class tvMain:
                        .replace(file_type, 'csv'), graphdata, delimiter=',')
 
     def showPreferences(self):
-        d = PreferencesDialog.PreferencesDialog(self.master)
+        d = PreferencesDialog.PreferencesDialog(self.master, self.preferences)
         #root.wait_window(d)
 
     def savePreferences(self):
