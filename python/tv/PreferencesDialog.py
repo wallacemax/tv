@@ -23,7 +23,7 @@ class PreferencesDialog(Dialog):
             e.grid(row=foo, column=1)
             e.insert(END, paramvalue)
             self.entries[key] = e
-            #TODO: tooltips
+            #TODO: tooltips?
             foo += 1
 
         l = Label(master, textvariable=self.updatemsg)

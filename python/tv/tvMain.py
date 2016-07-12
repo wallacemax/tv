@@ -1,4 +1,3 @@
-
 __author__ = 'maxwallace'
 import sys
 import datetime
@@ -51,7 +50,7 @@ radialgraphwidth = 6.5
 radialgraphratio = 1
 timegraphwidth = 6
 timegraphratio = 1
-audittextsize=12
+audittextsize=8
 
 treename = 'nstx'
 userid = os.getenv('LOGNAME')
@@ -279,9 +278,9 @@ class tvMain:
         # bar = [time_signal, time_units, radial_signal, radial_units, signal, units]
 
         selectedTime = '{0:.0f}'.format((ne[0][framenumber]+time_difference)*1000) + 'ms'
-        displayedTime = '{0:.0f}'.format(ne[0][framenumber]*1000) + 'ms'
+        self.displayedTime = '{0:.0f}'.format(ne[0][framenumber]*1000) + 'ms'
         displayedTimeDifference = '{0:.2f}'.format(time_difference*1000) + 'ms'
-        self.figure_1.suptitle('$T_{TS}$' + ' = {}'.format(displayedTime) +
+        self.figure_1.suptitle('$T_{TS}$' + ' = {}'.format(self.displayedTime) +
                                ', $\Delta T$={}'.format(displayedTimeDifference))
         #self.figure_1.suptitle('Data displayed for {}, {} different'
             # .format(displayedTime, displayedTimeDifference))  #3.1502ms
@@ -514,21 +513,25 @@ class tvMain:
             else:
                 graphTitle = 'TimeData'
 
-            fileName = self.export_graph_image(file_type, graph, graphTitle, shotnumber, timestamp)
+            fileName = self.export_graph_image(file_type, graph, graphTitle, self.displayedTime, shotnumber, timestamp)
 
             if self.include_csv.get():
                 self.export_csv_data(fileName, file_type, graph, graphTitle)
 
         self.update_text.set(updatestring)
 
-    def export_graph_image(self, file_type, graph, graphTitle, shotnumber, timestamp):
+    def export_graph_image(self, file_type, graph, graphTitle, graphtime, shotnumber, timestamp):
         # TODO: save to user directory, if avail, otherwise do the shotnumber directory thing
-        if not os.path.exists(shotnumber):
-            os.makedirs(shotnumber)
-        fileName = '{}/{}_{}_{}.{}'.format(shotnumber, shotnumber, graphTitle, timestamp,
-                                           file_type).replace(' ', '')
-        graph.savefig(fileName, dpi=defaultdpi, format=file_type, bbox_inches='tight', frameon=None)
-        return fileName
+
+        directoryname = '~/{}/'.format(userid)
+
+        #Shotnumber_yyyymmdd_hh24mmss_0798ms.ext
+        fileName = '{}_{}_{}_{}.{}'.format(shotnumber, timestamp, graphTitle, graphtime, file_type).replace(' ', '')
+
+        filetosave = fileName if not os.path.exists(directoryname) else directoryname + fileName
+
+        graph.savefig(filetosave, dpi=defaultdpi, format=file_type, bbox_inches='tight', frameon=None)
+        return filetosave
 
     def add_graph_thumbprint(self, graph):
 
@@ -599,8 +602,8 @@ class tvMain:
 
     def createDefaultPreferences(self):
         prefs = {'font_size':['Font Size', 16],
-            'radialgraphxmin':['Radial Plot Min', 0],
-            'radialgraphxmax':['Radial Plot Max', 180],
+            'radialgraphxmin':['', 0],
+            'radialgraphxmax':['', 180],
             '1ylabelmin':['n_E Minimum', 0],
             '1ylabelmax':['n_E Maximum', -1],
             '2ylabelmin':['T_E Minimum', 0],
