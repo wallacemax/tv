@@ -1,3 +1,4 @@
+#stolen from http://www.voidspace.org.uk/python/weblog/arch_d7_2006_07_01.shtml
 from Tkinter import *
 
 class ToolTip(object):
