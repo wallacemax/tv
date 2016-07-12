@@ -305,7 +305,7 @@ class tvMain:
 
         self.ax3.set_xlabel("Radius (cm)")
 
-        self.changeRadialRange(self.radialgraphxmin, self.radialgraphxmax)
+        self.changeRadialRange(self.preferences['radialgraphxmin'][1], self.preferences['radialgraphxmax'][1])
 
         self.canvas_1.draw()
 
@@ -345,8 +345,12 @@ class tvMain:
 
         thisx = rr[indmin:indmax]
 
-        self.radialgraphxmin = thisx[0]
-        self.radialgraphxmax = thisx[-1]
+        self.preferences['radialgraphxmin'][1], self.preferences['radialgraphxmax'][1] = \
+            thisx[0], thisx[-1]
+
+        self.savePreferences()
+
+        self.radialgraphxmin, self.radialgraphxmax = thisx[0], thisx[-1]
 
         self.update_text.set("Redrew radial plot boundaries.")
 

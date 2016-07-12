@@ -32,7 +32,7 @@ class PreferencesDialog(Dialog):
         self.updatemsg.set('')
         for key, e in self.entries.iteritems():
             try:
-                foo = int(e.get())
+                foo = float(e.get())
             except ValueError:
                 self.updatemsg.set('Please check all of your inputs are numbers.')
                 break
@@ -40,4 +40,4 @@ class PreferencesDialog(Dialog):
 
     def apply(self):
         for key, value in self.entries.iteritems():
-            self.preferences[key][1] = int(value.get())
+            self.preferences[key][1] = float(value.get())
