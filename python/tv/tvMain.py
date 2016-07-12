@@ -521,8 +521,6 @@ class tvMain:
         self.update_text.set(updatestring)
 
     def export_graph_image(self, file_type, graph, graphTitle, graphtime, shotnumber, timestamp):
-        # TODO: save to user directory, if avail, otherwise do the shotnumber directory thing
-
         directoryname = '~/{}/'.format(userid)
 
         #Shotnumber_yyyymmdd_hh24mmss_0798ms.ext
