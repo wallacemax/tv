@@ -75,6 +75,8 @@ class tvMain:
 
         self.loadPreferences()
 
+        self.centerwindow(width=self.preferences['mainwindowwidth'][1], height=self.preferences['mainwindowheight'][1])
+
         self.selectedTimeIndex = -1
 
         self.InitUI()
@@ -99,6 +101,16 @@ class tvMain:
                                 'WMHD': 'Stored Energy'}
 
         self.update_text.set('Please input shot number for visualization.')
+
+    def centerwindow(self, width, height):
+        # get screen width and height
+        screen_width = self.master.winfo_screenwidth()
+        screen_height = self.master.winfo_screenheight()
+
+        # calculate position x and y coordinates
+        x = (screen_width / 2) - (width / 2)
+        y = (screen_height / 2) - (height / 2)
+        self.master.geometry('%dx%d+%d+%d' % (width, height, x, y))
 
     def InitUI(self):
 
@@ -546,11 +558,16 @@ class tvMain:
 
     def showPreferences(self):
         d = PreferencesDialog.PreferencesDialog(self.master, self.preferences)
+        #after form
         for key, value in d.preferences.iteritems():
             self.preferences[key] = d.preferences[key]
 
-        self.preferences['mainwindowwidth'] = root.winfo_screenwidth()
-        self.preferences['mainwindowheight'] = root.winfo_screenheight()
+        d.destroy()
+
+        self.preferences['mainwindowwidth'] = ['', self.master.winfo_width()]
+        self.preferences['mainwindowheight'] = ['', self.master.winfo_height()]
+
+        self.savePreferences()
 
         self.update_text.set("Updated preferences.")
 

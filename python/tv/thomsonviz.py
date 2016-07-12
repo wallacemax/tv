@@ -3,7 +3,7 @@ from tvMain import *
 
 
 def main():
-    center_window()
+
     root.wm_title("ThomsonViz")
     root["bg"] = "white"
     root.tk_setPalette(background='white', foreground='black')
@@ -16,28 +16,15 @@ def main():
 
     root["bd"] = 0
     app = tvMain(root)
-
     root.bind('<Left>', lambda event,arg=-1: tvMain.updateTimeGraphKeypress(app, arg))
     root.bind('<Right>', lambda event,arg=1: tvMain.updateTimeGraphKeypress(app, arg))
 
     root.lift()
 
-    root.mainloop()  ### (3)
-    app.savePreferences()
+    root.mainloop()
 
 def on_closing():
     sys.exit()
-
-def center_window(width=1268, height=760):
-    # get screen width and height
-    screen_width = root.winfo_screenwidth()
-    screen_height = root.winfo_screenheight()
-
-    # calculate position x and y coordinates
-    x = (screen_width/2) - (width/2)
-    y = (screen_height/2) - (height/2)
-    root.geometry('%dx%d+%d+%d' % (width, height, x, y))
-
 
 root = tk.Tk()
 root.protocol("WM_DELETE_WINDOW", on_closing)

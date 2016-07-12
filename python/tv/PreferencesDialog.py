@@ -12,16 +12,16 @@ class PreferencesDialog(Dialog):
         plotfont = {'family': 'Bitstream Vera Sans', 'size': self.preferences['font_size'][1]}
 
         foo = 0
-        for pref in sorted(self.preferences.keys()):
-            if len(self.preferences[pref][0]) == 0:
+        for key, value in sorted(self.preferences.iteritems()):
+            if len(value[0]) == 0:
                 continue
-            paramvalue = str(self.preferences[pref][1])
+            paramvalue = str(value[1])
 
-            Label(master, text=self.preferences[pref][0], font=plotfont).grid(row=foo, column=0)
+            Label(master, text=value[0], font=plotfont).grid(row=foo, column=0)
             e = Entry(master, font=plotfont)
             e.grid(row=foo, column=1)
             e.insert(END, paramvalue)
-            self.entries[pref] = e
+            self.entries[key] = e
             #TODO: tooltips
             foo += 1
 
@@ -40,4 +40,4 @@ class PreferencesDialog(Dialog):
 
     def apply(self):
         for key, value in self.entries.iteritems():
-            self.preferences[key] = int(value.get())
+            self.preferences[key][1] = int(value.get())
