@@ -114,7 +114,7 @@ class tvMain:
 
     def InitUI(self):
 
-        self.displayFont = tkFont.Font(family='Bitstream Vera Sans', size=16)
+        self.displayFont = tkFont.Font(family='Bitstream Vera Sans', size=int(self.preferences['font_size'][1]))
 
         self.drawShotHeader()
 
@@ -598,7 +598,7 @@ class tvMain:
             self.createDefaultPreferences()
 
     def createDefaultPreferences(self):
-        prefs = {'font_size':['Font Size', 12],
+        prefs = {'font_size':['Font Size', 16],
             'radialgraphxmin':['Radial Plot Min', 0],
             'radialgraphxmax':['Radial Plot Max', 180],
             '1ylabelmin':['n_E Minimum', 0],
