@@ -10,7 +10,7 @@ class PreferencesDialog(Dialog):
         Dialog.__init__(self, parent, "Preferences")
 
     def body(self, master):
-        plotfont = {'family': 'Bitstream Vera Sans', 'size': self.preferences['font_size'][1]}
+        displayfont = {'family': 'Bitstream Vera Sans', 'size': self.preferences['font_size'][1]}
 
         foo = 0
         for key, value in sorted(self.preferences.iteritems()):
@@ -18,8 +18,8 @@ class PreferencesDialog(Dialog):
                 continue
             paramvalue = str(value[1])
 
-            Label(master, text=value[0], font=plotfont).grid(row=foo, column=0)
-            e = Entry(master, font=plotfont)
+            Label(master, text=value[0], font=displayfont).grid(row=foo, column=0)
+            e = Entry(master, font=displayfont, justify='center')
             e.grid(row=foo, column=1)
             e.insert(END, paramvalue)
             self.entries[key] = e
