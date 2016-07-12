@@ -6,6 +6,7 @@ class PreferencesDialog(Dialog):
         self.preferences = prefs
         self.entries = {}
         self.updatemsg = StringVar()
+        self.updatemsg.set("Most preferences take effect after reopening ThomsonViz.")
         Dialog.__init__(self, parent, "Preferences")
 
     def body(self, master):
@@ -26,7 +27,7 @@ class PreferencesDialog(Dialog):
             foo += 1
 
         l = Label(master, textvariable=self.updatemsg)
-        l.grid(row=foo, column=0)
+        l.grid(row=foo, column=0, sticky=NS, columnspan=2)
 
     def validate(self):
         self.updatemsg.set('')
