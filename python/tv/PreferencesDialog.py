@@ -14,7 +14,10 @@ class PreferencesDialog(Dialog):
             if len(self.preferences[pref][0]) == 0:
                 continue
             Label(master, text=self.preferences[pref][0], font=plotfont).grid(row=foo, column=0)
-            Entry(master, text=self.preferences[pref][1], font=plotfont).grid(row=foo, column=1)
+            e = Entry(master, font=plotfont)
+            e.grid(row=foo, column=1)
+            e.insert(END, str(self.preferences[pref][1]))
+            #TODO: tooltips
             foo += 1
 
     def validate(self):
