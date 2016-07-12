@@ -192,7 +192,7 @@ class tvMain:
         self.ax_a.set_xlim([0, maxscale])
         self.ax_a.ticklabel_format(axis='y', style='sci', scilimits=(-2, 2))
         self.ax_a.set_title(self.MDS_data_titles['IP'])
-        self.fig_a, = self.ax_a.plot(IP[0], IP[4], marker='.', linestyle='None')
+        self.fig_a = self.ax_a.plot(IP[0], IP[4], marker='.', linestyle='None', markersize=12)
 
         self.ax_b = self.figure_a.add_subplot(2, 1, 2)
         self.ax_b.set_xlabel('Time [s]')
@@ -202,7 +202,7 @@ class tvMain:
         self.ax_b.set_xlim([0, maxscale])
         self.ax_b.ticklabel_format(axis='y', style='sci', scilimits=(-2, 2))
         self.ax_b.set_title(self.MDS_data_titles['WMHD'])
-        self.fig_b, = self.ax_b.plot(wmhd[0], wmhd[4], marker='.', linestyle='None')
+        self.fig_b = self.ax_b.plot(wmhd[0], wmhd[4], marker='.', linestyle='None', markersize=12)
 
         self.figure_a.subplots_adjust(hspace=.7, bottom=0.13)
 
@@ -286,19 +286,19 @@ class tvMain:
             # .format(displayedTime, displayedTimeDifference))  #3.1502ms
 
         self.ax1.clear()
-        self.ax1.plot(ne[2], ne[4][:, framenumber], marker='.', linestyle='None', c='red')
+        self.ax1.plot(ne[2], ne[4][:, framenumber], marker='.', linestyle='None', c='red', markersize=12)
         self.ax1.set_title(self.MDS_data_titles['NEF'])
         setp(self.ax1.get_xticklabels(), visible=False)
         self.ax1.set_ylabel(ne[5])
 
         self.ax2.clear()
-        self.ax2.plot(te[2], te[4][:, framenumber], marker='s', linestyle='None', c='blue')
+        self.ax2.plot(te[2], te[4][:, framenumber], marker='s', linestyle='None', c='blue', markersize=12)
         self.ax2.set_title(self.MDS_data_titles['TEF'])
         setp(self.ax2.get_xticklabels(), visible=False)
         self.ax2.set_ylabel(te[5])
 
         self.ax3.clear()
-        self.ax3.plot(pe[2], pe[4][:, framenumber], marker='^', linestyle='None', c='green')
+        self.ax3.plot(pe[2], pe[4][:, framenumber], marker='^', linestyle='None', c='green', markersize=12)
         self.ax3.set_title(self.MDS_data_titles['PEF'])
         self.ax3.set_ylabel(pe[5])
 
