@@ -13,9 +13,11 @@ USE_MOCK_DATA = sys.platform == 'darwin'
 if USE_MOCK_DATA:
     #running on macosx i.e., locally on a laptop, use mock
     import mock_shot_data as OMFITdata
+    demoshotnumber = 205088
 else:
     #running on the server, run full DAL
     import OMFIT_shot_data as OMFITdata
+    demoshotnumber = 204062
 
 try:
     # for Python2
@@ -131,7 +133,7 @@ class tvMain:
         self.lblShot.grid(row=0, column=0, sticky=tk.NSEW)
 
         self.txtShotNumber = tk.Entry(self.entryFrame, width=12, fg='red', justify='center', font=self.displayFont)
-        self.txtShotNumber.insert(0, '205088')
+        self.txtShotNumber.insert(0, demoshotnumber)
         self.txtShotNumber.bind("<Return>", lambda event: self.shotnumberInput())
         self.txtShotNumber.bind("b", lambda event: self.shotnumberInput())
         self.txtShotNumber.grid(row=0, column=1, sticky=tk.NSEW)
@@ -235,7 +237,6 @@ class tvMain:
             selectedIndex = self.selectedTimeIndex + direction
 
         self.updateRadialGraphTime(self.MDS_data['TEF'][0][selectedIndex])
-
 
     def createRadialGraphs(self, selected_time):
 
@@ -441,6 +442,13 @@ class tvMain:
         #bar = [time_signal, time_units, radial_signal, radial_units, signal, units]
         #determine dimensions of machine from data set
         self.MDS_data['RR'] = self.MDS_data['TEF'][2]
+
+        #cut data after last Thomson value - the rest of any other signal is unimportant
+        lastThomsonTime = np.amax(self.MDS_data['PEF'][0])
+        for l in [self.MDS_data['IP'], self.MDS_data['WMHD']]:
+            lastThomsonIndex = self.find_idx_nearest_value(l[0], lastThomsonTime) + 1
+            for foo in [0,4]:
+                l[foo] = l[foo][0:lastThomsonIndex]
 
         #TODO: change max to amax
         self.radialgraphxmax = self.MDS_data['NEF'][2].max()
