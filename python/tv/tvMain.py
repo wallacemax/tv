@@ -443,12 +443,13 @@ class tvMain:
         #determine dimensions of machine from data set
         self.MDS_data['RR'] = self.MDS_data['TEF'][2]
 
-        #cut data after last Thomson value - the rest of any other signal is unimportant
+        #cut data before first Thomson value and after last Thomson value - the rest of any other signal is unimportant
         lastThomsonTime = np.amax(self.MDS_data['PEF'][0])
         for l in [self.MDS_data['IP'], self.MDS_data['WMHD']]:
+            firstThomsonIndex = self.find_idx_nearest_value(l[0], 0)
             lastThomsonIndex = self.find_idx_nearest_value(l[0], lastThomsonTime) + 1
             for foo in [0,4]:
-                l[foo] = l[foo][0:lastThomsonIndex]
+                l[foo] = l[foo][firstThomsonIndex:lastThomsonIndex]
 
         #TODO: change max to amax
         self.radialgraphxmax = self.MDS_data['NEF'][2].max()
