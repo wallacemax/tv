@@ -192,8 +192,7 @@ class tvMain:
                                         timegraphwidth * timegraphratio), dpi=defaultdpi, facecolor='white')
         self.ax_a = self.figure_a.add_subplot(2, 1, 1)
         self.ax_a.set_ylabel(IP[5])
-        # TODO: round ylimit up to nearest hundred
-        self.ax_a.set_ylim([0, self.roundtohundred(np.amax(IP[4]))])
+        self.ax_a.set_ylim([0, 1])
         self.ax_a.set_xlim([0, maxscale])
         self.ax_a.ticklabel_format(axis='y', style='sci', scilimits=(-2, 2))
         self.ax_a.set_title(self.MDS_data_titles['IP'])
@@ -202,8 +201,8 @@ class tvMain:
         self.ax_b = self.figure_a.add_subplot(2, 1, 2)
         self.ax_b.set_xlabel('Time [s]')
         self.ax_b.set_ylabel(wmhd[5])
-        # TODO: round ylimit up to nearest hundred
-        self.ax_b.set_ylim([0, self.roundtohundred(np.amax(wmhd[4]))])
+        #self.ax_b.set_ylim([0, self.roundtohundred(np.amax(wmhd[4]))])
+        self.ax_a.set_ylim([0, 1])
         self.ax_b.set_xlim([0, maxscale])
         self.ax_b.ticklabel_format(axis='y', style='sci', scilimits=(-2, 2))
         self.ax_b.set_title(self.MDS_data_titles['WMHD'])
@@ -458,19 +457,10 @@ class tvMain:
         self.radialmachinexmin = self.radialgraphxmin
         self.radialmachinexmax = self.radialgraphxmax
 
-        # #drop any data in wmhd and ip past the actual shot
-        # WMHD = self.MDS_data['WMHD']
-        # IP = self.MDS_data['IP']
-        # endidx = max(len([i for i in WMHD[0] if i >= 0]), len(IP[0]))
-        #
-        # for foo in [0,4]:
-        #     WMHD[foo] = WMHD[foo][0:endidx]
-        #     IP[foo] = IP[foo][0:endidx]
-
-        #WMHD J to kJ
 
         #change those labels
         #TODO: put IP in MA
+        self.MDS_data['IP'][4] = [x/1e3 for x in self.MDS_data['IP'][4]]
         self.MDS_data['IP'][5] = '$I_P\;[MA]$'
 
         #TODO: put NEF in m^-3
@@ -479,7 +469,8 @@ class tvMain:
         self.MDS_data['TEF'][5] = '$T_E\;[kEV]$'
         self.MDS_data['PEF'][5] = '$P_E\;[kPa]$'
 
-        self.MDS_data['WMHD'][4] = [x/10e2 for x in self.MDS_data['WMHD'][4]]
+        #WMHD J to kJ
+        self.MDS_data['WMHD'][4] = [x/1e3 for x in self.MDS_data['WMHD'][4]]
         self.MDS_data['WMHD'][5] = '$W_{MHD}\;[kJ]$'
 
         # TODO: be clever and do in sigfigs
