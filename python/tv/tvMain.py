@@ -230,34 +230,27 @@ class tvMain:
 
     def updateTimeGraphKeypress(self, direction):
         if self.selectedTimeIndex == -1 or len(self.MDS_data['TEF'][0]) <= self.selectedTimeIndex + direction:
-            return
+            selectedIndex = 0
+        else:
+            selectedIndex = self.selectedTimeIndex + direction
 
-        self.updateRadialGraphTime(self.MDS_data['TEF'][0][self.selectedTimeIndex + direction])
+        self.updateRadialGraphTime(self.MDS_data['TEF'][0][selectedIndex])
+
 
     def createRadialGraphs(self, selected_time):
-        # logger.debug('Creating radial graphs for {}'.format(selected_time))
-
-        #radialFrame = tk.Frame(self.master)
-        #radialFrame.grid(row=2, column=0, sticky=tk.W+tk.E+tk.N+tk.S)
 
         # pdb.set_trace()
-        self.figure_1 = figure(figsize=(radialgraphwidth,
-                                        radialgraphwidth * radialgraphratio),
-                               dpi=defaultdpi,
-                               facecolor='white'
-                               )
 
-        self.figure_1.add_subplot(311)
-        self.ax1 = subplot(3, 1, 1)
-        self.ax2 = subplot(3, 1, 2)
-        self.ax3 = subplot(3, 1, 3)
+        self.figure_1 = Figure(figsize=(radialgraphwidth,
+                                        radialgraphwidth * radialgraphratio), dpi=defaultdpi, facecolor='white')
+
+        self.ax1 = self.figure_1.add_subplot(3, 1, 1)
+        self.ax2 = self.figure_1.add_subplot(3, 1, 2)
+        self.ax3 = self.figure_1.add_subplot(3, 1, 3)
 
         self.figure_1.subplots_adjust(hspace=.25)
 
         self.canvas_1 = FigureCanvasTkAgg(self.figure_1, master=self.master)
-
-        self.canvas_1.show()
-        self.canvas_1.get_tk_widget().grid(row=2, column=0, sticky=tk.W+tk.E+tk.N+tk.S)
 
         self.span1 = SpanSelector(self.ax1, self.rangeOnSelect, 'horizontal', useblit=True,
                                   rectprops=dict(alpha=0.5, facecolor='red'))
@@ -268,6 +261,8 @@ class tvMain:
 
         self.updateRadialGraphTime(selected_time)
 
+        self.canvas_1.show()
+        self.canvas_1.get_tk_widget().grid(row=2, column=0, sticky=tk.W + tk.E + tk.N + tk.S)
         self.update_text.set("Created radial plots.")
 
     def updateRadialGraphs(self, framenumber, time_difference = 0):
