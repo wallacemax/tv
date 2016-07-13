@@ -17,7 +17,9 @@ def main():
     root["bd"] = 0
     app = tvMain(root)
     root.bind('<Left>', lambda event,arg=-1: tvMain.updateTimeGraphKeypress(app, arg))
+    root.bind('<Prior>', lambda event, arg=-1: tvMain.updateTimeGraphKeypress(app, arg))
     root.bind('<Right>', lambda event,arg=1: tvMain.updateTimeGraphKeypress(app, arg))
+    root.bind('<Next>', lambda event, arg=1: tvMain.updateTimeGraphKeypress(app, arg))
 
     root.lift()
 

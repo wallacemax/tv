@@ -119,6 +119,8 @@ class tvMain:
 
         self.drawFooter()
 
+        self.txtShotNumber.focus_set()
+
     def drawShotHeader(self):
         # setup shot frame
         self.entryFrame = tk.Frame(self.master)
@@ -131,6 +133,7 @@ class tvMain:
         self.txtShotNumber = tk.Entry(self.entryFrame, width=12, fg='red', justify='center', font=self.displayFont)
         self.txtShotNumber.insert(0, '205088')
         self.txtShotNumber.bind("<Return>", lambda event: self.shotnumberInput())
+        self.txtShotNumber.bind("b", lambda event: self.shotnumberInput())
         self.txtShotNumber.grid(row=0, column=1, sticky=tk.NSEW)
 
         self.headerLogo = tk.PhotoImage(file=headerlogofilepath)
@@ -211,6 +214,7 @@ class tvMain:
         self.multi = MultiCursor(self.canvas_a, (self.ax_a, self.ax_b), color='g', lw=2, horizOn=False, vertOn=True)
 
         self.canvas_a.mpl_connect('motion_notify_event', self.TimeGraphMove)
+        self.canvas_a.mpl_connect('button_press_event', lambda event: self.canvas_a._tkcanvas.focus_set())
 
         self.canvas_a.show()
         self.canvas_a.get_tk_widget().grid(row=2, column=1, sticky=tk.E+tk.W+tk.N+tk.S)
