@@ -34,6 +34,7 @@ import matplotlib
 matplotlib.use('agg')
 matplotlib.use('TkAgg')
 from matplotlib.pyplot import *
+import matplotlib.ticker as ticker
 
 import numpy as np
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
@@ -264,6 +265,7 @@ class tvMain:
 
         self.canvas_1.show()
         self.canvas_1.get_tk_widget().grid(row=2, column=0, sticky=tk.W + tk.E + tk.N + tk.S)
+
         self.update_text.set("Created radial plots.")
 
     def updateRadialGraphs(self, framenumber, time_difference = 0):
@@ -290,6 +292,8 @@ class tvMain:
         self.ax1.set_title(self.MDS_data_titles['NEF'])
         setp(self.ax1.get_xticklabels(), visible=False)
         self.ax1.set_ylabel(ne[5])
+
+        self.ax1.yaxis.set_major_formatter(FuncFormatter(lambda x, pos: ('%.2f') % (x * 1e-20)))
 
         self.ax2.clear()
         self.ax2.plot(te[2], te[4][:, framenumber], marker='s', linestyle='None', c='blue', markersize=12)
@@ -464,9 +468,12 @@ class tvMain:
         self.MDS_data['IP'][4] = [x/1e3 for x in self.MDS_data['IP'][4]]
         self.MDS_data['IP'][5] = '$I_P\;[MA]$'
 
-        #TODO: put NEF in m^-3
-        #self.MDS_data['NEF'][4] = [x/10e6 for x in self.MDS_data['NEF'][4]]
-        self.MDS_data['NEF'][5] = '$n_e\;[cm^{-3}]$'
+        #TODO: put NEF in m^-3 from cm^-3
+        self.MDS_data['NEF'][4] = \
+            np.array([[x*1e6 for x in density] for density in \
+             [[radial for radial in timestamp] for timestamp in self.MDS_data['NEF'][4]]]
+                     )
+        self.MDS_data['NEF'][5] = '$n_e\;[10^{20} m^{-3}]$'
         self.MDS_data['TEF'][5] = '$T_e\;[kEV]$'
         self.MDS_data['PEF'][5] = '$P_e\;[kPa]$'
 
