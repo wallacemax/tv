@@ -192,6 +192,7 @@ class tvMain:
                                         timegraphwidth * timegraphratio), dpi=defaultdpi, facecolor='white')
         self.ax_a = self.figure_a.add_subplot(2, 1, 1)
         self.ax_a.set_ylabel(IP[5])
+        #TODO: revisit IP Y scaling when appropriate
         self.ax_a.set_ylim([0, 1])
         self.ax_a.set_xlim([0, maxscale])
         self.ax_a.ticklabel_format(axis='y', style='sci', scilimits=(-2, 2))
@@ -204,7 +205,7 @@ class tvMain:
         #self.ax_b.set_ylim([0, self.roundtohundred(np.amax(wmhd[4]))])
         self.ax_a.set_ylim([0, 1])
         self.ax_b.set_xlim([0, maxscale])
-        self.ax_b.ticklabel_format(axis='y', style='sci', scilimits=(-2, 2))
+        self.ax_b.ticklabel_format(axis='y', style='sci', scilimits=(-2, 2), )
         self.ax_b.set_title(self.MDS_data_titles['WMHD'])
         self.fig_b = self.ax_b.plot(wmhd[0], wmhd[4], marker='.', linestyle='None', markersize=12)
 
@@ -329,6 +330,11 @@ class tvMain:
         self.update_text.set("Displayed closest Thomson data to {0:.2f}ms.".format(selected_time * 1000))
 
     def changeRadialRange(self, graphxmin, graphxmax):
+
+        self.preferences['radialgraphxmin'][1], self.preferences['radialgraphxmax'][1] = \
+            graphxmin, graphxmax
+        self.savePreferences()
+
         self.ax1.set_xlim(graphxmin, graphxmax)
         self.ax2.set_xlim(graphxmin, graphxmax)
         self.ax3.set_xlim(graphxmin, graphxmax)
@@ -342,11 +348,6 @@ class tvMain:
         indmax = min(self.radialgraphxmax, indmax)
 
         thisx = rr[indmin:indmax]
-
-        self.preferences['radialgraphxmin'][1], self.preferences['radialgraphxmax'][1] = \
-            thisx[0], thisx[-1]
-
-        self.savePreferences()
 
         self.radialgraphxmin, self.radialgraphxmax = thisx[0], thisx[-1]
 
@@ -465,9 +466,9 @@ class tvMain:
 
         #TODO: put NEF in m^-3
         #self.MDS_data['NEF'][4] = [x/10e6 for x in self.MDS_data['NEF'][4]]
-        self.MDS_data['NEF'][5] = '$n_E\;[cm^{-3}]$'
-        self.MDS_data['TEF'][5] = '$T_E\;[kEV]$'
-        self.MDS_data['PEF'][5] = '$P_E\;[kPa]$'
+        self.MDS_data['NEF'][5] = '$n_e\;[cm^{-3}]$'
+        self.MDS_data['TEF'][5] = '$T_e\;[kEV]$'
+        self.MDS_data['PEF'][5] = '$P_e\;[kPa]$'
 
         #WMHD J to kJ
         self.MDS_data['WMHD'][4] = [x/1e3 for x in self.MDS_data['WMHD'][4]]
@@ -601,12 +602,12 @@ class tvMain:
         prefs = {'font_size':['Font Size', 16],
             'radialgraphxmin':['', 0],
             'radialgraphxmax':['', 180],
-            '1ylabelmin':['n_E Minimum', 0],
-            '1ylabelmax':['n_E Maximum', -1],
-            '2ylabelmin':['T_E Minimum', 0],
-            '2ylabelmax':['T_E Maximum', -1],
-            '3ylabelmin':['P_E Minimum', 0],
-            '3ylabelmax':['P_E Maximum', -1],
+            '1ylabelmin':['n_e Minimum', 0],
+            '1ylabelmax':['n_e Maximum', -1],
+            '2ylabelmin':['T_e Minimum', 0],
+            '2ylabelmax':['T_e Maximum', -1],
+            '3ylabelmin':['P_e Minimum', 0],
+            '3ylabelmax':['P_e Maximum', -1],
             'mainwindowheight':['', 760],
             'mainwindowwidth':['', 1268]}
 
