@@ -475,7 +475,7 @@ class tvMain:
             np.array([[x*1e6 for x in density] for density in \
              [[radial for radial in timestamp] for timestamp in self.MDS_data['NEF'][4]]]
                      )
-        self.MDS_data['NEF'][5] = '$n_e\;[10^{20} m^{-3}]$'
+        self.MDS_data['NEF'][5] = '$n_e\;[10^{20}\;m^{-3}]$'
         self.MDS_data['TEF'][5] = '$T_e\;[kEV]$'
         self.MDS_data['PEF'][5] = '$P_e\;[kPa]$'
 
