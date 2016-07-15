@@ -294,17 +294,20 @@ class tvMain:
         self.ax1.set_ylabel(ne[5])
 
         self.ax1.yaxis.set_major_formatter(FuncFormatter(lambda x, pos: ('%.2f') % (x * 1e-20)))
+        self.ax1.set_ylim([self.preferences['1ylabelmin'][1]*1e20, self.preferences['1ylabelmax'][1]*1e20])
 
         self.ax2.clear()
         self.ax2.plot(te[2], te[4][:, framenumber], marker='s', linestyle='None', c='blue', markersize=12)
         self.ax2.set_title(self.MDS_data_titles['TEF'])
         setp(self.ax2.get_xticklabels(), visible=False)
         self.ax2.set_ylabel(te[5])
+        self.ax2.set_ylim([self.preferences['2ylabelmin'][1], self.preferences['2ylabelmax'][1]])
 
         self.ax3.clear()
         self.ax3.plot(pe[2], pe[4][:, framenumber], marker='^', linestyle='None', c='green', markersize=12)
         self.ax3.set_title(self.MDS_data_titles['PEF'])
         self.ax3.set_ylabel(pe[5])
+        self.ax3.set_ylim([self.preferences['3ylabelmin'][1], self.preferences['3ylabelmax'][1]])
 
         self.ax3.set_xlabel("Radius (cm)")
 
@@ -441,9 +444,8 @@ class tvMain:
         # look.  we all do things we aren't proud of.
         # the MDS tree is incorrect/inconsistant for units.  we, um, 'adjust' things here.
 
-        #TODO: fix this for new data formats
+        # bar = [time_signal, time_units, radial_signal, radial_units, signal, units]
 
-        #bar = [time_signal, time_units, radial_signal, radial_units, signal, units]
         #determine dimensions of machine from data set
         self.MDS_data['RR'] = self.MDS_data['TEF'][2]
 
@@ -488,6 +490,12 @@ class tvMain:
 
         updatestring = 'Massaged MDS data.'
         self.update_text.set(updatestring)
+
+    def reject_outliers(self, data, m=2.):
+        d = np.abs(data - np.median(data))
+        mdev = np.median(d)
+        s = d / mdev if mdev else 0.
+        return data[s < m]
 
     def export_graphs(self, shotid, file_type):
         # foo = "export {} {}, include CSV: {} ".format(str(shotid), file_type, str(include_csv))
@@ -609,12 +617,12 @@ class tvMain:
         prefs = {'font_size':['Font Size', 16],
             'radialgraphxmin':['', 0],
             'radialgraphxmax':['', 180],
-            '1ylabelmin':['n_e Minimum', 0],
-            '1ylabelmax':['n_e Maximum', -1],
+            '1ylabelmin':['n_e Minimum * 1e20', 0],
+            '1ylabelmax':['n_e Maximum * 1e20', 1],
             '2ylabelmin':['T_e Minimum', 0],
-            '2ylabelmax':['T_e Maximum', -1],
+            '2ylabelmax':['T_e Maximum', 2],
             '3ylabelmin':['P_e Minimum', 0],
-            '3ylabelmax':['P_e Maximum', -1],
+            '3ylabelmax':['P_e Maximum', 2],
             'mainwindowheight':['', 760],
             'mainwindowwidth':['', 1268]}
 
