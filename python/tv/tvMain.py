@@ -34,18 +34,14 @@ import matplotlib
 matplotlib.use('agg')
 matplotlib.use('TkAgg')
 from matplotlib.pyplot import *
-import matplotlib.ticker as ticker
-
-import numpy as np
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
-
 from matplotlib.widgets import MultiCursor
 from matplotlib.widgets import SpanSelector
 
-import math
+import MDSTraceData as mdstd
 
-import pdb
+from util import *
 import pickle
 
 defaultdpi = 100
@@ -68,7 +64,7 @@ headerlogofilepath = "NSTX-U_logo_thick_font_transparent.gif"
 
 import PreferencesDialog
 
-class tvMain:
+class tvMain():
     def __init__(self, master):
         self.master = master
 
@@ -79,13 +75,13 @@ class tvMain:
 
         self.loadDefaultDataSources()
 
+        self.loadUserDataSources()
+
         self.centerwindow(width=self.preferences['mainwindowwidth'][1], height=self.preferences['mainwindowheight'][1])
 
         self.selectedTimeIndex = -1
 
         self.InitUI()
-
-        self.loadUserDataSources()
 
         self.update_text.set('Please input shot number for visualization.')
 
@@ -302,11 +298,11 @@ class tvMain:
 
     def updateRadialGraphTime(self, selected_time):
         try:
-            self.selectedTimeIndex = self.find_idx_nearest_value(self.MDS_data['TEF'][0], selected_time)
+            self.selectedTimeIndex = find_idx_nearest_value(self.MDS_data['TEF'][0], selected_time)
 
             # bar = [time_signal, time_units, radial_signal, radial_units, signal, units]
             # MPL MouseEvent: xy=(456,424) xydata=(0.796994851319,0.273058346212) button=None dblclick=False inaxes=Axes(0.125,0.614815;0.775x0.285185)
-            nearest_frame = self.find_idx_nearest_value(self.MDS_data['NEF'][0], selected_time)
+            nearest_frame = find_idx_nearest_value(self.MDS_data['NEF'][0], selected_time)
             nearest_time = self.MDS_data['NEF'][0][nearest_frame]
             timedelta = nearest_time - selected_time
 
@@ -378,13 +374,6 @@ class tvMain:
     def radialGraphCursor_moved(self):
         pass
 
-    def roundtohundred(self, x):
-        return int(math.ceil(x / 100.0)) * 100
-
-    def find_idx_nearest_value(self, target, val):
-        idx = (np.abs(target-val)).argmin()
-        return idx
-
     def get_graph_data(self, datacaption, framenumber):
         key = ''
         for item in self.MDS_data_titles.items():
@@ -405,82 +394,6 @@ class tvMain:
         self.createRadialGraphs(max_ip_time)
 
         #TODO: set multi xdata location to max_ip_time
-
-    def getData(self, treename, requestedTDI):
-        return self.data.get_tree_data('nstx', treename, requestedTDI)
-
-    def get_data_object(self, shotnumber):
-        if USE_MOCK_DATA:
-            self.data = OMFITdata.mock_shot_data(shotnumber)
-        else:
-            self.data = OMFITdata.OMFIT_shot_data(shotnumber)
-
-    def load_data(self, shotnumber):
-
-        for foo in self.MDS_data_nodes:
-            self.MDS_data[foo[0]] = self.getData(foo[1], foo[2])
-            self.update_text.set('Retrieved data for {}'.format(foo[0]))
-
-        self.update_text.set('Data loaded from tree for {}'.format(shotnumber))
-
-        self.tamper_with_data()
-
-    def tamper_with_data(self):
-        # look.  we all do things we aren't proud of.
-        # the MDS tree is incorrect/inconsistant for units.  we, um, 'adjust' things here.
-
-        # bar = [time_signal, time_units, radial_signal, radial_units, signal, units]
-
-        #determine dimensions of machine from data set
-        self.MDS_data['RR'] = self.MDS_data['TEF'][2]
-
-        #cut data before first Thomson value and after last Thomson value - the rest of any other signal is unimportant
-        lastThomsonTime = np.amax(self.MDS_data['PEF'][0])
-        for l in [self.MDS_data['IP'], self.MDS_data['WMHD']]:
-            firstThomsonIndex = self.find_idx_nearest_value(l[0], 0)
-            lastThomsonIndex = self.find_idx_nearest_value(l[0], lastThomsonTime) + 1
-            for foo in [0,4]:
-                l[foo] = l[foo][firstThomsonIndex:lastThomsonIndex]
-
-        #TODO: change max to amax
-        self.radialgraphxmax = self.MDS_data['NEF'][2].max()
-        self.radialgraphxmin = self.MDS_data['NEF'][2].min()
-
-        self.radialmachinexmin = self.radialgraphxmin
-        self.radialmachinexmax = self.radialgraphxmax
-
-
-        #change those labels
-        #TODO: put IP in MA
-        self.MDS_data['IP'][4] = [x/1e3 for x in self.MDS_data['IP'][4]]
-        self.MDS_data['IP'][5] = '$I_P\;[MA]$'
-
-        #TODO: put NEF in m^-3 from cm^-3
-        self.MDS_data['NEF'][4] = \
-            np.array([[x*1e6 for x in density] for density in \
-             [[radial for radial in timestamp] for timestamp in self.MDS_data['NEF'][4]]]
-                     )
-        self.MDS_data['NEF'][5] = '$n_e\;[10^{20}\;m^{-3}]$'
-        self.MDS_data['TEF'][5] = '$T_e\;[kEV]$'
-        self.MDS_data['PEF'][5] = '$P_e\;[kPa]$'
-
-        #WMHD J to kJ
-        self.MDS_data['WMHD'][4] = [x/1e3 for x in self.MDS_data['WMHD'][4]]
-        self.MDS_data['WMHD'][5] = '$W_{MHD}\;[kJ]$'
-
-        # TODO: be clever and do in sigfigs
-        #IP A to kA
-        #self.MDS_data['IP'][4] = [x / 1000 for x in self.MDS_data['IP'][4]]
-        #self.MDS_data['IP'][5] = 'kA'
-
-        updatestring = 'Massaged MDS data.'
-        self.update_text.set(updatestring)
-
-    def reject_outliers(self, data, m=2.):
-        d = np.abs(data - np.median(data))
-        mdev = np.median(d)
-        s = d / mdev if mdev else 0.
-        return data[s < m]
 
     def export_graphs(self, shotid, file_type):
         # foo = "export {} {}, include CSV: {} ".format(str(shotid), file_type, str(include_csv))
@@ -521,7 +434,7 @@ class tvMain:
         self.update_text.set(updatestring)
 
     def export_graph_image(self, file_type, graph, graphTitle, graphtime, shotnumber, timestamp):
-        directoryname = '~/{}/'.format(userid)
+        directoryname = '~/u/{}/'.format(userid)
 
         #Shotnumber_yyyymmdd_hh24mmss_0798ms.ext
         fileName = '{}_{}_{}_{}.{}'.format(shotnumber, timestamp, graphTitle, graphtime, file_type).replace(' ', '')
@@ -617,8 +530,18 @@ class tvMain:
 
         self.update_text.set('Created default preferences.')
 
-    def createDefaultDataSources(self):
-        pass
+    def saveUserDataSources(self):
+        with open(self.getDataSourcesFileName(), 'wb') as f:
+            pickle.dump(self.preferences, f, pickle.HIGHEST_PROTOCOL)
+
+    def getDataSourcesFileName(self):
+        preffilename = '{}_data.pref'.format(userid)
+
+        # are we on the cluster?  if so, look in *their* directory
+        if os.path.exists(userpath + preffilename):
+            preffilename = userpath + preffilename
+
+        return preffilename
 
     def loadDefaultDataSources(self):
         self.MDS_data_nodes = [['NEF', 'ACTIVESPEC', 'MPTS.OUTPUT_DATA.BEST.FIT_NE'],
@@ -640,12 +563,130 @@ class tvMain:
                                 'IP': 'Plasma Current',
                                 'WMHD': 'Stored Energy'}
 
+    def createDefaultDataSources(self):
+
+        if not os.path.exists(''):
+            self.shotData = {'NEF': mdstd.MDSTraceData(panelID=1,
+                                                   TDI='MPTS.OUTPUT_DATA.BEST.FIT_NE',
+                                                   tree='ACTIVESPEC',
+                                                   name='Electron Temperature',
+                                                   units='keV',
+                                                   scaling=-1,
+                                                   label='Electron Temperature',
+                                                   x_label='',
+                                                   y_label='$n_e\;[10^{20}\;m^{-3}]$'),
+                             'TEF': mdstd.MDSTraceData(panelID=2,
+                                                       TDI='MPTS.OUTPUT_DATA.BEST.FIT_TE',
+                                                       tree='ACTIVESPEC',
+                                                       name='Electron Temperature',
+                                                       units='keV',
+                                                       scaling='',
+                                                       label='Electron Temperature',
+                                                       x_label='',
+                                                       y_label='$T_e\;[kev]$'),
+                             'PEF': mdstd.MDSTraceData(panelID=2,
+                                                       TDI='MPTS.OUTPUT_DATA.BEST.FIT_PE',
+                                                       tree='ACTIVESPEC',
+                                                       name='Electron Pressure',
+                                                       units='kPa',
+                                                       scaling='',
+                                                       label='Electron Pressure',
+                                                       x_label='',
+                                                       y_label='$P_e\;[kPa]$'),
+                             'IP': mdstd.MDSTraceData(panelID=4,
+                                                      TDI='IP',
+                                                      tree='WF',
+                                                      name='Plasma Current',
+                                                      units='MA',
+                                                      scaling=1e-3,
+                                                      label='Plasma Current',
+                                                      x_label='',
+                                                      y_label='$I_P\;[MA]$'),
+                             'WHMD': mdstd.MDSTraceData(panelID=5,
+                                                        TDI='RESULTS.AEQDSK.WMHD',
+                                                        tree='EFIT01',
+                                                        name='Stored Energy',
+                                                        units='kJ',
+                                                        scaling='1e-3',
+                                                        label='',
+                                                        x_label='',
+                                                        y_label='$W_{MHD}\;[kJ]$')}
+            with open(self.getPreferencesFileName(), 'wb') as f:
+                pickle.dump(self.preferences, f, pickle.HIGHEST_PROTOCOL)
+
+    def tamper_with_data(self):
+        # look.  we all do things we aren't proud of.
+        # the MDS tree is incorrect/inconsistant for units.  we, um, 'adjust' things here.
+
+        # bar = [time_signal, time_units, radial_signal, radial_units, signal, units]
+
+        # determine dimensions of machine from data set
+        self.MDS_data['RR'] = self.MDS_data['TEF'][2]
+
+        # cut data before first Thomson value and after last Thomson value - the rest of any other signal is unimportant
+        lastThomsonTime = np.amax(self.MDS_data['PEF'][0])
+        for l in [self.MDS_data['IP'], self.MDS_data['WMHD']]:
+            firstThomsonIndex = find_idx_nearest_value(l[0], 0)
+            lastThomsonIndex = find_idx_nearest_value(l[0], lastThomsonTime) + 1
+            for foo in [0, 4]:
+                l[foo] = l[foo][firstThomsonIndex:lastThomsonIndex]
+
+        # TODO: change max to amax
+        self.radialgraphxmax = self.MDS_data['NEF'][2].max()
+        self.radialgraphxmin = self.MDS_data['NEF'][2].min()
+
+        self.radialmachinexmin = self.radialgraphxmin
+        self.radialmachinexmax = self.radialgraphxmax
+
+        # change those labels
+        # TODO: put IP in MA
+        self.MDS_data['IP'][4] = [x / 1e3 for x in self.MDS_data['IP'][4]]
+        self.MDS_data['IP'][5] = '$I_P\;[MA]$'
+
+        # TODO: put NEF in m^-3 from cm^-3
+        self.MDS_data['NEF'][4] = \
+            np.array([[x * 1e6 for x in density] for density in \
+                      [[radial for radial in timestamp] for timestamp in self.MDS_data['NEF'][4]]]
+                     )
+        self.MDS_data['NEF'][5] = '$n_e\;[10^{20}\;m^{-3}]$'
+        self.MDS_data['TEF'][5] = '$T_e\;[keV]$'
+        self.MDS_data['PEF'][5] = '$P_e\;[kPa]$'
+
+        # WMHD J to kJ
+        self.MDS_data['WMHD'][4] = [x / 1e3 for x in self.MDS_data['WMHD'][4]]
+        self.MDS_data['WMHD'][5] = '$W_{MHD}\;[kJ]$'
+
+        # TODO: be clever and do in sigfigs
+        # IP A to kA
+        # self.MDS_data['IP'][4] = [x / 1000 for x in self.MDS_data['IP'][4]]
+        # self.MDS_data['IP'][5] = 'kA'
+
+        updatestring = 'Massaged MDS data.'
+        self.update_text.set(updatestring)
+
     def loadUserDataSources(self):
-        pass
+        try:
+            with open(self.getDataSourcesFileName(), 'rb') as f:
+                self.shotData = pickle.load(f)
+                self.update_text.set('Loaded data sources.')
+        except IOError:
+            self.createDefaultDataSources()
 
-    def saveUserDataSources(self):
-        pass
+    def getData(self, treename, requestedTDI):
+        return self.data.get_tree_data('nstx', treename, requestedTDI)
 
-    def scaleDataSource(self, source, feedindex, newExponent):
-        #this is going to be a mess
-        pass
+    def get_data_object(self, shotnumber):
+        if USE_MOCK_DATA:
+            self.data = OMFITdata.mock_shot_data(shotnumber)
+        else:
+            self.data = OMFITdata.OMFIT_shot_data(shotnumber)
+
+    def load_data(self, shotnumber):
+
+        for foo in self.MDS_data_nodes:
+            self.MDS_data[foo[0]] = self.getData(foo[1], foo[2])
+            self.update_text.set('Retrieved data for {}'.format(foo[0]))
+
+        self.update_text.set('Data loaded from tree for {}'.format(shotnumber))
+
+        self.tamper_with_data()
