@@ -77,6 +77,8 @@ class tvMain:
 
         self.loadPreferences()
 
+        self.loadDefaultDataSources()
+
         self.centerwindow(width=self.preferences['mainwindowwidth'][1], height=self.preferences['mainwindowheight'][1])
 
         self.selectedTimeIndex = -1
