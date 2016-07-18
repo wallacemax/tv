@@ -83,24 +83,7 @@ class tvMain:
 
         self.InitUI()
 
-        self.MDS_data_nodes = [['NEF', 'ACTIVESPEC', 'MPTS.OUTPUT_DATA.BEST.FIT_NE'],
-                ['PEF', 'ACTIVESPEC', 'MPTS.OUTPUT_DATA.BEST.FIT_PE'],
-                ['TEF', 'ACTIVESPEC', 'MPTS.OUTPUT_DATA.BEST.FIT_TE'],
-                ['IP', 'WF', 'IP'],
-                ['WMHD', 'EFIT01', 'RESULTS.AEQDSK.WMHD']
-                ]
-
-        self.MDS_data = {'NEF': Ellipsis,
-                         'PEF': Ellipsis,
-                         'TEF': Ellipsis,
-                         'IP': Ellipsis,
-                         'WMHD': Ellipsis}
-
-        self.MDS_data_titles = {'NEF': 'Electron Density',
-                                'PEF': 'Electron Pressure',
-                                'TEF': 'Electron Temperature',
-                                'IP': 'Plasma Current',
-                                'WMHD': 'Stored Energy'}
+        self.loadUserDataSources()
 
         self.update_text.set('Please input shot number for visualization.')
 
@@ -631,3 +614,36 @@ class tvMain:
         self.savePreferences()
 
         self.update_text.set('Created default preferences.')
+
+    def createDefaultDataSources(self):
+        pass
+
+    def loadDefaultDataSources(self):
+        self.MDS_data_nodes = [['NEF', 'ACTIVESPEC', 'MPTS.OUTPUT_DATA.BEST.FIT_NE'],
+                               ['PEF', 'ACTIVESPEC', 'MPTS.OUTPUT_DATA.BEST.FIT_PE'],
+                               ['TEF', 'ACTIVESPEC', 'MPTS.OUTPUT_DATA.BEST.FIT_TE'],
+                               ['IP', 'WF', 'IP'],
+                               ['WMHD', 'EFIT01', 'RESULTS.AEQDSK.WMHD']
+                               ]
+
+        self.MDS_data = {'NEF': Ellipsis,
+                         'PEF': Ellipsis,
+                         'TEF': Ellipsis,
+                         'IP': Ellipsis,
+                         'WMHD': Ellipsis}
+
+        self.MDS_data_titles = {'NEF': 'Electron Density',
+                                'PEF': 'Electron Pressure',
+                                'TEF': 'Electron Temperature',
+                                'IP': 'Plasma Current',
+                                'WMHD': 'Stored Energy'}
+
+    def loadUserDataSources(self):
+        pass
+
+    def saveUserDataSources(self):
+        pass
+
+    def scaleDataSource(self, source, feedindex, newExponent):
+        #this is going to be a mess
+        pass
