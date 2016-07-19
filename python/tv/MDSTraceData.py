@@ -11,18 +11,16 @@ class MDSTraceData:
     def __init__(self, panelID, TDI, tree, name, units, scaling, label, x_label, y_label):
 
         self.server = 'NSTX'
+        self.prop = {'panelID': panelID, 'TDI': TDI, 'tree': tree, 'name': name, 'units': units, 'scaling': scaling,
+                     'label': label, 'x_label': x_label, 'y_label': y_label}
 
-        self.panelID = panelID
-        self.TDI = TDI
-        self.tree = tree
-        self.name = name
-        self.units = units
-        self.scaling = scaling
-        self.label = label
-        self.x_label = x_label
-        self.y_label = y_label
+        self.data = ''
 
-        self.data = Ellipsis
+    def __getitem__(self, item):
+        return self.prop[item]
+
+    def __setitem__(self, key, value):
+        self.prop[key] = value
 
     def updateUnits(self, newUnits):
         self.units = newUnits

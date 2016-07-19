@@ -63,6 +63,7 @@ matplotlib.rc('font', **plotfont)
 headerlogofilepath = "NSTX-U_logo_thick_font_transparent.gif"
 
 import PreferencesDialog
+import DataSourcesDialog
 
 class tvMain():
     def __init__(self, master):
@@ -158,6 +159,11 @@ class tvMain():
         btnPreferences = tk.Button(text="Preferences...", command=lambda: self.showPreferences(),
                             font = self.displayFont)
         btnPreferences.grid(row=4, column=0, sticky=tk.NS + tk.E)
+
+        btnDataConfig = tk.Button(text="Configure Data...", command=lambda: self.showDataConfiguration(),
+                                   font=self.displayFont)
+
+        btnDataConfig.grid(row=4, column=1, sticky=tk.NS + tk.W)
 
         self.update_text.set("Drew footer.")
 
@@ -530,9 +536,21 @@ class tvMain():
 
         self.update_text.set('Created default preferences.')
 
+    def showDataConfiguration(self):
+
+        d = DataSourcesDialog.DataSourcesDialog(self.master, self.preferences, self.shotData)
+        # after form
+        self.shotData = d.shotData
+
+        d.destroy()
+
+        self.saveUserDataSources()
+
+        self.update_text.set("Updated data sources.")
+
     def saveUserDataSources(self):
         with open(self.getDataSourcesFileName(), 'wb') as f:
-            pickle.dump(self.preferences, f, pickle.HIGHEST_PROTOCOL)
+            pickle.dump(self.shotData, f, pickle.HIGHEST_PROTOCOL)
 
     def getDataSourcesFileName(self):
         preffilename = '{}_data.pref'.format(userid)
@@ -565,54 +583,63 @@ class tvMain():
 
     def createDefaultDataSources(self):
 
-        if not os.path.exists(''):
+        try:
             self.shotData = {'NEF': mdstd.MDSTraceData(panelID=1,
-                                                   TDI='MPTS.OUTPUT_DATA.BEST.FIT_NE',
+                                               TDI='MPTS.OUTPUT_DATA.BEST.FIT_NE',
+                                               tree='ACTIVESPEC',
+                                               name='Electron Density',
+                                               units='$m^{-3}$',
+                                               scaling=-1,
+                                               label='Electron Density',
+                                               x_label='',
+                                               y_label='$n_e\;[10^{20}\;m^{-3}]$'),
+                         'TEF': mdstd.MDSTraceData(panelID=2,
+                                                   TDI='MPTS.OUTPUT_DATA.BEST.FIT_TE',
                                                    tree='ACTIVESPEC',
                                                    name='Electron Temperature',
                                                    units='keV',
-                                                   scaling=-1,
+                                                   scaling='',
                                                    label='Electron Temperature',
                                                    x_label='',
-                                                   y_label='$n_e\;[10^{20}\;m^{-3}]$'),
-                             'TEF': mdstd.MDSTraceData(panelID=2,
-                                                       TDI='MPTS.OUTPUT_DATA.BEST.FIT_TE',
-                                                       tree='ACTIVESPEC',
-                                                       name='Electron Temperature',
-                                                       units='keV',
-                                                       scaling='',
-                                                       label='Electron Temperature',
-                                                       x_label='',
-                                                       y_label='$T_e\;[kev]$'),
-                             'PEF': mdstd.MDSTraceData(panelID=2,
-                                                       TDI='MPTS.OUTPUT_DATA.BEST.FIT_PE',
-                                                       tree='ACTIVESPEC',
-                                                       name='Electron Pressure',
-                                                       units='kPa',
-                                                       scaling='',
-                                                       label='Electron Pressure',
-                                                       x_label='',
-                                                       y_label='$P_e\;[kPa]$'),
-                             'IP': mdstd.MDSTraceData(panelID=4,
-                                                      TDI='IP',
-                                                      tree='WF',
-                                                      name='Plasma Current',
-                                                      units='MA',
-                                                      scaling=1e-3,
-                                                      label='Plasma Current',
-                                                      x_label='',
-                                                      y_label='$I_P\;[MA]$'),
-                             'WHMD': mdstd.MDSTraceData(panelID=5,
-                                                        TDI='RESULTS.AEQDSK.WMHD',
-                                                        tree='EFIT01',
-                                                        name='Stored Energy',
-                                                        units='kJ',
-                                                        scaling='1e-3',
-                                                        label='',
-                                                        x_label='',
-                                                        y_label='$W_{MHD}\;[kJ]$')}
-            with open(self.getPreferencesFileName(), 'wb') as f:
-                pickle.dump(self.preferences, f, pickle.HIGHEST_PROTOCOL)
+                                                   y_label='$T_e\;[kev]$'),
+                         'PEF': mdstd.MDSTraceData(panelID=3,
+                                                   TDI='MPTS.OUTPUT_DATA.BEST.FIT_PE',
+                                                   tree='ACTIVESPEC',
+                                                   name='Electron Pressure',
+                                                   units='kPa',
+                                                   scaling='',
+                                                   label='Electron Pressure',
+                                                   x_label='',
+                                                   y_label='$P_e\;[kPa]$'),
+                         'IP': mdstd.MDSTraceData(panelID=4,
+                                                  TDI='IP',
+                                                  tree='WF',
+                                                  name='Plasma Current',
+                                                  units='MA',
+                                                  scaling=1e-3,
+                                                  label='Plasma Current',
+                                                  x_label='',
+                                                  y_label='$I_P\;[MA]$'),
+                         'WHMD': mdstd.MDSTraceData(panelID=5,
+                                                    TDI='RESULTS.AEQDSK.WMHD',
+                                                    tree='EFIT01',
+                                                    name='Stored Energy',
+                                                    units='kJ',
+                                                    scaling='1e-3',
+                                                    label='',
+                                                    x_label='',
+                                                    y_label='$W_{MHD}\;[kJ]$')}
+            self.saveUserDataSources()
+        except Exception as e:
+            self.update_text.set("An error occured while creating default data source preferences.")
+
+    def loadUserDataSources(self):
+        try:
+            with open(self.getDataSourcesFileName(), 'rb') as f:
+                self.shotData = pickle.load(f)
+                self.update_text.set('Loaded data sources.')
+        except IOError:
+            self.createDefaultDataSources()
 
     def tamper_with_data(self):
         # look.  we all do things we aren't proud of.
@@ -663,14 +690,6 @@ class tvMain():
 
         updatestring = 'Massaged MDS data.'
         self.update_text.set(updatestring)
-
-    def loadUserDataSources(self):
-        try:
-            with open(self.getDataSourcesFileName(), 'rb') as f:
-                self.shotData = pickle.load(f)
-                self.update_text.set('Loaded data sources.')
-        except IOError:
-            self.createDefaultDataSources()
 
     def getData(self, treename, requestedTDI):
         return self.data.get_tree_data('nstx', treename, requestedTDI)
