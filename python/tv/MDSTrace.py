@@ -11,7 +11,7 @@ class MDSTrace:
     def __init__(self, panelID, TDI, tree, name, units, scaling, label, x_label, y_label):
 
         self.server = 'NSTX'
-        self.prop = {'panelID': panelID, 'TDI': TDI, 'tree': tree, 'name': name, 'units': units, 'scaling': scaling,
+        self.prop = {'panelID': panelID, 'tdi': TDI, 'tree': tree, 'name': name, 'units': units, 'scaling': scaling,
                      'label': label, 'x_label': x_label, 'y_label': y_label}
 
         self.data = ''

@@ -3,9 +3,17 @@ from Tkinter import *
 import MDSTrace as mdst
 import uuid
 
+import matplotlib as mpl
+import matplotlib.pyplot as py
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from matplotlib.figure import Figure
+
+import numpy as np
+
 class DataSourcesDialog(Dialog):
-    def __init__(self, parent, pref, shotData):
+    def __init__(self, parent, pref, shotData, omfitdata):
         self.shotData = shotData
+        self.omfitdata = omfitdata
         self.preferences = pref
         self.entries = {}
         self.updatemsg = StringVar()
@@ -15,7 +23,7 @@ class DataSourcesDialog(Dialog):
     def body(self, master):
         displayfont = {'family': 'Bitstream Vera Sans', 'size': self.preferences['font_size'][1]}
         #panelID not displayed, b/c we don't want the user to set it here
-        datas = {'TDI': 'Tree Data Interface (from OMFIT)', 'tree': 'Tree Name', 'name': 'Trace Name',
+        datas = {'tdi': 'Tree Data Interface (from OMFIT)', 'tree': 'Tree Name', 'name': 'Trace Name',
                  'units': 'Units', 'scaling': 'Scaling Factor', 'label': 'Graph Label',
                  'x_label': 'X Dimension Label', 'y_label': 'Y Dimension Label'}
 
@@ -39,7 +47,7 @@ class DataSourcesDialog(Dialog):
                                       font=displayfont)
         self.addsource.grid(row=0, column=1)
 
-        foo = 1
+        numberofrows = 1
         for key in sorted(datas, key=datas.__getitem__):
             #okay, this is all weird now.
             # {'NEF': mdstd.MDSTraceData(panelID=1,
@@ -52,20 +60,59 @@ class DataSourcesDialog(Dialog):
             #                            x_label='',
             #                            y_label='$n_e\;[10^{20}\;m^{-3}]$'),
 
-            Label(master, text=datas[key], font=displayfont).grid(row=foo, column=0)
+            Label(master, text=datas[key], font=displayfont).grid(row=numberofrows, column=0)
             e = Entry(master, font=displayfont, justify='center')
-            e.grid(row=foo, column=1)
+            e.grid(row=numberofrows, column=1)
             #can't insert yet, don't have a data source picked
             #e.insert(END, self.shotData[key])
             self.entries[key] = e
             #TODO: tooltips?
-            foo += 1
+            numberofrows += 1
 
         l = Label(master, textvariable=self.updatemsg)
-        l.grid(row=foo, column=0, sticky=NS, columnspan=2)
+        l.grid(row=numberofrows, column=0, sticky=NS, columnspan=2)
+
+        self.numberofrows = numberofrows
+
+        #set update event for preview pane
+        #self.entries['tdi'].trace("w", self.loadPreview)
+        #self.entries['tree'].trace("w", self.loadPreview)
 
         #and refresh
         self.selectedDataSource.set(self.dropdownkeys[0])
+
+    def loadPreview(self):
+        #pull preview data, if ready
+
+        if not (len(self.entries['tdi'].get()) > 0) and (len(self.entries['tree'].get()) > 0):
+            pass
+
+        try:
+            if self.omfitdata.shotid is None:
+                self.omfitdata.shotid = '204062'
+            MDSTracePreview = self.omfitdata.get_tree_data('nstx', self.entries['tree'].get(), self.entries['TDI'].get())
+
+            #TODO: refactor and push this out to a generator
+            self.figure_prev = Figure(figsize=(6,
+                                               6), dpi=100, facecolor='white')
+
+            self.ax_prev = self.figure_prev.add_subplot(2, 1, 1)
+            self.ax_prev.set_ylabel(self.entries['y_label'].get())
+
+            self.ax_prev.set_ylim([0, np.amax(MDSTracePreview[4])])
+            self.ax_prev.set_xlim([0, np.amax(MDSTracePreview[0])])
+            self.ax_prev.ticklabel_format(axis='y', style='sci', scilimits=(-2, 2))
+            self.ax_prev.set_title(self.entries['x_label'].get())
+            self.fig_prev = self.ax_prev.plot(MDSTracePreview[0], MDSTracePreview[4],
+                                              marker='.', linestyle='None', markersize=12)
+
+            self.canvas_prev = FigureCanvasTkAgg(self.figure_prev, master=self.master)
+
+            self.canvas_prev.show()
+            self.canvas_prev.get_tk_widget().grid(row=1, column=2, sticky=NSEW, columnspan=self.numberofrows)
+        except Exception as e:
+            self.updatemsg.set('Unable to preview.  Please check TDI and tree name.')
+
 
     def loadDataSource(self, *args):
         thisData = [x for x in self.shotData.values() if x['name']==self.selectedDataSource.get()][0]

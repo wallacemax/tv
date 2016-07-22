@@ -13,7 +13,7 @@ USE_MOCK_DATA = sys.platform == 'darwin'
 if USE_MOCK_DATA:
     #running on macosx i.e., locally on a laptop, use mock
     import mock_shot_data as OMFITdata
-    demoshotnumber = 205088
+    demoshotnumber = 204062
 else:
     #running on the server, run full DAL
     import OMFIT_shot_data as OMFITdata
@@ -538,7 +538,13 @@ class tvMain():
 
     def showDataConfiguration(self):
 
-        d = DataSourcesDialog.DataSourcesDialog(self.master, self.preferences, self.shotData)
+        try:
+            self.data is None
+        except AttributeError as e:
+            self.update_text.set('Please open a shot before configuring data.')
+            pass
+
+        d = DataSourcesDialog.DataSourcesDialog(self.master, self.preferences, self.shotData, self.data)
         # after form
         # TODO: global data source configuration thing here
         self.shotData = d.shotData
@@ -617,7 +623,7 @@ class tvMain():
                                               tree='WF',
                                               name='Plasma Current',
                                               units='MA',
-                                              scaling=1e-3,
+                                              scaling='1e-3',
                                               label='Plasma Current',
                                               x_label='',
                                               y_label='$I_P\;[MA]$'),
@@ -629,7 +635,17 @@ class tvMain():
                                                 scaling='1e-3',
                                                 label='Stored Energy',
                                                 x_label='',
-                                                y_label='$W_{MHD}\;[kJ]$')}
+                                                y_label='$W_{MHD}\;[kJ]$'),
+                         'ENGIP': mdstd.MDSTrace(panelID=5,
+                                                TDI='PPCC.PCS.RA.RA_AUC_IPL',
+                                                tree='ENGINEERING',
+                                                name='ENGIP',
+                                                units='MA',
+                                                scaling='1e-3',
+                                                label='Plasma Current (Engineering)',
+                                                x_label='',
+                                                y_label='$I_P\;[MA]$')
+                             }
             self.saveUserDataSources()
         except Exception as e:
             self.update_text.set("An error occured while creating default data source preferences.")
