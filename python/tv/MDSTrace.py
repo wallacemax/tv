@@ -6,7 +6,7 @@ import math
 from util import *
 
 
-class MDSTraceData:
+class MDSTrace:
 
     def __init__(self, panelID, TDI, tree, name, units, scaling, label, x_label, y_label):
 

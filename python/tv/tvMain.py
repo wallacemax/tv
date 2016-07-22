@@ -39,7 +39,7 @@ from matplotlib.figure import Figure
 from matplotlib.widgets import MultiCursor
 from matplotlib.widgets import SpanSelector
 
-import MDSTraceData as mdstd
+import MDSTrace as mdstd
 
 from util import *
 import pickle
@@ -540,6 +540,7 @@ class tvMain():
 
         d = DataSourcesDialog.DataSourcesDialog(self.master, self.preferences, self.shotData)
         # after form
+        # TODO: global data source configuration thing here
         self.shotData = d.shotData
 
         d.destroy()
@@ -584,51 +585,51 @@ class tvMain():
     def createDefaultDataSources(self):
 
         try:
-            self.shotData = {'NEF': mdstd.MDSTraceData(panelID=1,
-                                               TDI='MPTS.OUTPUT_DATA.BEST.FIT_NE',
+            self.shotData = {'NEF': mdstd.MDSTrace(panelID=1,
+                                                   TDI='MPTS.OUTPUT_DATA.BEST.FIT_NE',
+                                                   tree='ACTIVESPEC',
+                                                   name='Electron Density',
+                                                   units='$m^{-3}$',
+                                                   scaling=-1,
+                                                   label='Electron Density',
+                                                   x_label='',
+                                                   y_label='$n_e\;[10^{20}\;m^{-3}]$'),
+                         'TEF': mdstd.MDSTrace(panelID=2,
+                                               TDI='MPTS.OUTPUT_DATA.BEST.FIT_TE',
                                                tree='ACTIVESPEC',
-                                               name='Electron Density',
-                                               units='$m^{-3}$',
-                                               scaling=-1,
-                                               label='Electron Density',
+                                               name='Electron Temperature',
+                                               units='keV',
+                                               scaling='',
+                                               label='Electron Temperature',
                                                x_label='',
-                                               y_label='$n_e\;[10^{20}\;m^{-3}]$'),
-                         'TEF': mdstd.MDSTraceData(panelID=2,
-                                                   TDI='MPTS.OUTPUT_DATA.BEST.FIT_TE',
-                                                   tree='ACTIVESPEC',
-                                                   name='Electron Temperature',
-                                                   units='keV',
-                                                   scaling='',
-                                                   label='Electron Temperature',
-                                                   x_label='',
-                                                   y_label='$T_e\;[kev]$'),
-                         'PEF': mdstd.MDSTraceData(panelID=3,
-                                                   TDI='MPTS.OUTPUT_DATA.BEST.FIT_PE',
-                                                   tree='ACTIVESPEC',
-                                                   name='Electron Pressure',
-                                                   units='kPa',
-                                                   scaling='',
-                                                   label='Electron Pressure',
-                                                   x_label='',
-                                                   y_label='$P_e\;[kPa]$'),
-                         'IP': mdstd.MDSTraceData(panelID=4,
-                                                  TDI='IP',
-                                                  tree='WF',
-                                                  name='Plasma Current',
-                                                  units='MA',
-                                                  scaling=1e-3,
-                                                  label='Plasma Current',
-                                                  x_label='',
-                                                  y_label='$I_P\;[MA]$'),
-                         'WHMD': mdstd.MDSTraceData(panelID=5,
-                                                    TDI='RESULTS.AEQDSK.WMHD',
-                                                    tree='EFIT01',
-                                                    name='Stored Energy',
-                                                    units='kJ',
-                                                    scaling='1e-3',
-                                                    label='',
-                                                    x_label='',
-                                                    y_label='$W_{MHD}\;[kJ]$')}
+                                               y_label='$T_e\;[kev]$'),
+                         'PEF': mdstd.MDSTrace(panelID=3,
+                                               TDI='MPTS.OUTPUT_DATA.BEST.FIT_PE',
+                                               tree='ACTIVESPEC',
+                                               name='Electron Pressure',
+                                               units='kPa',
+                                               scaling='',
+                                               label='Electron Pressure',
+                                               x_label='',
+                                               y_label='$P_e\;[kPa]$'),
+                         'IP': mdstd.MDSTrace(panelID=4,
+                                              TDI='IP',
+                                              tree='WF',
+                                              name='Plasma Current',
+                                              units='MA',
+                                              scaling=1e-3,
+                                              label='Plasma Current',
+                                              x_label='',
+                                              y_label='$I_P\;[MA]$'),
+                         'WHMD': mdstd.MDSTrace(panelID=5,
+                                                TDI='RESULTS.AEQDSK.WMHD',
+                                                tree='EFIT01',
+                                                name='Stored Energy',
+                                                units='kJ',
+                                                scaling='1e-3',
+                                                label='Stored Energy',
+                                                x_label='',
+                                                y_label='$W_{MHD}\;[kJ]$')}
             self.saveUserDataSources()
         except Exception as e:
             self.update_text.set("An error occured while creating default data source preferences.")
