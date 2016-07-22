@@ -22,24 +22,6 @@ class MDSTrace:
     def __setitem__(self, key, value):
         self.prop[key] = value
 
-    def updateUnits(self, newUnits):
-        self.units = newUnits
-
-    def updateScaling(self, newscaling):
-        self.scaling = newscaling
-
-    def updateLabel(self, newlabel):
-        self.label = newlabel
-
-    def updatex_label(self, newxlabel):
-        self.x_label = newxlabel
-
-    def updatey_label(self, newylabel):
-        self.y_label = newylabel
-
-    def updateData(self, newData):
-        self.data = newData
-
     def scaleData(self, newexponent):
         #this is going to be a mess
         pass
