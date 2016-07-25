@@ -89,21 +89,22 @@ class DataSourcesDialog(Dialog):
                 return
 
             xdata = MDSTracePreview[0]
-            ydata = MDSTracePreview[4]
-
+            maxscale = np.amax(xdata)
             #adjust
-            scalingfactor = pow(1, int(self.entries['scaling'].get().lower().replace('1e', '')))
-            ydata = [x / scalingfactor for x in ydata]
+            scalingfactor = pow(10, int(self.entries['scaling'].get().lower().replace('1e', '')))
+            ydata = [x * scalingfactor for x in MDSTracePreview[4]]
 
             #TODO: refactor and push this out to a generator
             self.figure_prev = Figure(figsize=(6,
                                                6), dpi=100, facecolor='white')
 
             self.ax_prev = self.figure_prev.add_subplot(2, 1, 1)
+
+            self.ax_prev.set_xlabel(self.entries['x_label'].get())
             self.ax_prev.set_ylabel(self.entries['y_label'].get())
 
-            self.ax_prev.set_xlim([0, np.amax(xdata)])
-            self.ax_prev.set_ylim([0, np.amax(ydata)])
+            self.ax_prev.set_xlim([0, maxscale])
+            self.ax_prev.set_ylim([0, 1])
 
             self.ax_prev.ticklabel_format(axis='y', style='sci', scilimits=(-2, 2))
             self.ax_prev.set_title(self.entries['label'].get())
