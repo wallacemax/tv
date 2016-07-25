@@ -17,7 +17,8 @@ class mock_shot_data:  ### (1)
              ['PEF', 'ACTIVESPEC', 'MPTS.OUTPUT_DATA.BEST.FIT_PE'],
              ['TEF', 'ACTIVESPEC', 'MPTS.OUTPUT_DATA.BEST.FIT_TE'],
              ['IP', 'WF', 'IP'],
-             ['WMHD', 'EFIT01', 'RESULTS.AEQDSK.WMHD']
+             ['WMHD', 'EFIT01', 'RESULTS.AEQDSK.WMHD'],
+             ['ENGIP', 'ENGINEERING', 'AUCPL'],
              ]
 
         nodeid = ''

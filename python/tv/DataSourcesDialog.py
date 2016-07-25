@@ -21,6 +21,9 @@ class DataSourcesDialog(Dialog):
         Dialog.__init__(self, parent, "MDS Data")
 
     def body(self, master):
+
+        self.frame = master
+
         displayfont = {'family': 'Bitstream Vera Sans', 'size': self.preferences['font_size'][1]}
         #panelID not displayed, b/c we don't want the user to set it here
         datas = {'tdi': 'Tree Data Interface (from OMFIT)', 'tree': 'Tree Name', 'name': 'Trace Name',
@@ -30,53 +33,41 @@ class DataSourcesDialog(Dialog):
         #install dropdown
         self.dropdownkeys = [x['name'] for x in self.shotData.values()]
 
-        self.selectedDataSource = StringVar(master)
+        self.selectedDataSource = StringVar(self.frame)
         self.selectedDataSource.trace("w", self.loadDataSource)
 
-        self.optionstate = StringVar(master)
+        self.optionstate = StringVar(self.frame)
         self.optionstate.set('normal')
-        self.option = apply(OptionMenu, (master, self.selectedDataSource) + tuple(self.dropdownkeys))
+        self.option = apply(OptionMenu, (self.frame, self.selectedDataSource) + tuple(self.dropdownkeys))
         self.option.state = self.optionstate
         self.option.grid(row=0, column=0)
 
-        self.addbuttontext = StringVar(master)
+        self.addbuttontext = StringVar(self.frame)
         self.addbuttontext.set('Add...')
         self.addsource = Button(textvariable=self.addbuttontext,
                                       command=self.addButtonClicked,
-                                      master=master,
+                                      master=self.frame,
                                       font=displayfont)
         self.addsource.grid(row=0, column=1)
 
         numberofrows = 1
         for key in sorted(datas, key=datas.__getitem__):
             #okay, this is all weird now.
-            # {'NEF': mdstd.MDSTraceData(panelID=1,
-            #                            TDI='MPTS.OUTPUT_DATA.BEST.FIT_NE',
-            #                            tree='ACTIVESPEC',
-            #                            name='Electron Temperature',
-            #                            units='keV',
-            #                            scaling=-1,
-            #                            label='Electron Temperature',
-            #                            x_label='',
-            #                            y_label='$n_e\;[10^{20}\;m^{-3}]$'),
 
-            Label(master, text=datas[key], font=displayfont).grid(row=numberofrows, column=0)
-            e = Entry(master, font=displayfont, justify='center')
+            Label(self.frame, text=datas[key], font=displayfont).grid(row=numberofrows, column=0)
+            e = Entry(self.frame, font=displayfont, justify='center')
             e.grid(row=numberofrows, column=1)
-            #can't insert yet, don't have a data source picked
-            #e.insert(END, self.shotData[key])
             self.entries[key] = e
             #TODO: tooltips?
             numberofrows += 1
 
-        l = Label(master, textvariable=self.updatemsg)
-        l.grid(row=numberofrows, column=0, sticky=NS, columnspan=2)
+        self.previewButton = Button(self.frame, font=displayfont, command=self.loadPreview, text='Preview Data')
+        self.previewButton.grid(row=numberofrows, column=0, sticky=NSEW, columnspan=2)
 
-        self.numberofrows = numberofrows
+        l = Label(self.frame, textvariable=self.updatemsg)
+        l.grid(row=numberofrows+1, column=0, sticky=NSEW, columnspan=2)
 
-        #set update event for preview pane
-        #self.entries['tdi'].trace("w", self.loadPreview)
-        #self.entries['tree'].trace("w", self.loadPreview)
+        self.numberofrows = numberofrows+1
 
         #and refresh
         self.selectedDataSource.set(self.dropdownkeys[0])
@@ -84,13 +75,25 @@ class DataSourcesDialog(Dialog):
     def loadPreview(self):
         #pull preview data, if ready
 
-        if not (len(self.entries['tdi'].get()) > 0) and (len(self.entries['tree'].get()) > 0):
-            pass
+        if (len(self.entries['tdi'].get()) == 0) and (len(self.entries['tree'].get()) == 0):
+            return
 
         try:
             if self.omfitdata.shotid is None:
                 self.omfitdata.shotid = '204062'
-            MDSTracePreview = self.omfitdata.get_tree_data('nstx', self.entries['tree'].get(), self.entries['TDI'].get())
+            MDSTracePreview = self.omfitdata.get_tree_data('nstx',
+                                                           self.entries['tree'].get(), self.entries['tdi'].get())
+            # bar = [time_signal, time_units, radial_signal, radial_units, signal, units]
+            if not MDSTracePreview[2] is None:
+                self.updatemsg.set("{} is not a time-based signal.".format(self.entries['label'].get()))
+                return
+
+            xdata = MDSTracePreview[0]
+            ydata = MDSTracePreview[4]
+
+            #adjust
+            scalingfactor = pow(1, int(self.entries['scaling'].get().lower().replace('1e', '')))
+            ydata = [x / scalingfactor for x in ydata]
 
             #TODO: refactor and push this out to a generator
             self.figure_prev = Figure(figsize=(6,
@@ -99,17 +102,19 @@ class DataSourcesDialog(Dialog):
             self.ax_prev = self.figure_prev.add_subplot(2, 1, 1)
             self.ax_prev.set_ylabel(self.entries['y_label'].get())
 
-            self.ax_prev.set_ylim([0, np.amax(MDSTracePreview[4])])
-            self.ax_prev.set_xlim([0, np.amax(MDSTracePreview[0])])
+            self.ax_prev.set_xlim([0, np.amax(xdata)])
+            self.ax_prev.set_ylim([0, np.amax(ydata)])
+
             self.ax_prev.ticklabel_format(axis='y', style='sci', scilimits=(-2, 2))
-            self.ax_prev.set_title(self.entries['x_label'].get())
-            self.fig_prev = self.ax_prev.plot(MDSTracePreview[0], MDSTracePreview[4],
+            self.ax_prev.set_title(self.entries['label'].get())
+            self.fig_prev = self.ax_prev.plot(xdata, ydata,
                                               marker='.', linestyle='None', markersize=12)
 
-            self.canvas_prev = FigureCanvasTkAgg(self.figure_prev, master=self.master)
+            self.canvas_prev = FigureCanvasTkAgg(self.figure_prev, master=self.frame)
 
             self.canvas_prev.show()
-            self.canvas_prev.get_tk_widget().grid(row=1, column=2, sticky=NSEW, columnspan=self.numberofrows)
+            self.canvas_prev.get_tk_widget().grid(row=1, column=2, sticky=NSEW, rowspan=self.numberofrows)
+
         except Exception as e:
             self.updatemsg.set('Unable to preview.  Please check TDI and tree name.')
 
@@ -122,7 +127,6 @@ class DataSourcesDialog(Dialog):
             self.entries[key].insert(END, thisData[key])
 
         self.updatemsg.set("Loaded {}".format(self.selectedDataSource.get()))
-        pass
 
     def validate(self):
         #well, no required values, ergo, no validation.  wild.
