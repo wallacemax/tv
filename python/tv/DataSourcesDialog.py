@@ -61,6 +61,13 @@ class DataSourcesDialog(Dialog):
             #TODO: tooltips?
             numberofrows += 1
 
+        Label(self.frame, text='Display in Panel', font=displayfont).grid(row=numberofrows, column=0)
+        self.panelDisplayState = StringVar(self.frame)
+        self.panelDisplayState.set('')
+        self.panelOption = OptionMenu(self.frame, self.panelDisplayState, '', 'top', 'bottom')
+        self.panelOption.grid(row=numberofrows, column=1)
+        numberofrows += 1
+
         self.previewButton = Button(self.frame, font=displayfont, command=self.loadPreview, text='Preview Data')
         self.previewButton.grid(row=numberofrows, column=0, sticky=NSEW, columnspan=2)
 
