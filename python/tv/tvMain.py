@@ -578,7 +578,7 @@ class tvMain():
                                                    tree='ACTIVESPEC',
                                                    name='Electron Density',
                                                    units='$m^{-3}$',
-                                                   scaling=0,
+                                                   scaling='1e6',
                                                    label='Electron Density',
                                                    x_label='',
                                                    y_label='$n_e\;[10^{20}\;m^{-3}]$'),
