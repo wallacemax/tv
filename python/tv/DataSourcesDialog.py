@@ -141,9 +141,10 @@ class DataSourcesDialog(Dialog):
                                               marker='.', linestyle='None', markersize=12)
 
             self.canvas_prev = FigureCanvasTkAgg(self.figure_prev, master=self.frame)
+            self.canvas_prev.get_tk_widget().grid(row=1, column=2, sticky=NS, rowspan=self.numberofrows)
 
             self.canvas_prev.show()
-            self.canvas_prev.get_tk_widget().grid(row=1, column=2, sticky=NSEW, rowspan=self.numberofrows)
+
 
         except Exception as e:
             self.updatemsg.set('Unable to preview.  Please check TDI and tree name.')
