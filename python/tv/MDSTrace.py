@@ -17,31 +17,17 @@ class MDSTrace:
         self.data = ''
 
     def __getitem__(self, item):
-        return self.prop[item]
+        if item == 'data':
+            ret = self.data
+        else:
+            ret = self.prop[item]
+        return ret
 
     def __setitem__(self, key, value):
-        self.prop[key] = value
-
-    def scaleData(self, newexponent):
-        #this is going to be a mess
-        pass
-
-    def cutData(self, lastThomsonTime):
-        # cut data before first Thomson value at t=0 and after last Thomson value - the rest of any other signal is unimportant
-        #TODO: use last gradiant = 0 for final cut value instead of last Thomson timestamp
-
-        for l in [self.data]:
-            firstThomsonIndex = find_idx_nearest_value(l[0], 0)
-            lastThomsonIndex = find_idx_nearest_value(l[0], lastThomsonTime) + 1
-            for foo in [0, 4]:
-                l[foo] = l[foo][firstThomsonIndex:lastThomsonIndex]
-
-    def roundtohundred(self, x):
-        return int(math.ceil(x / 100.0)) * 100
-
-    def find_idx_nearest_value(self, target, val):
-        idx = (np.abs(target - val)).argmin()
-        return idx
+        if key == 'data':
+            self.data = value
+        else:
+            self.prop[key] = value
 
     def reject_outliers(self, data, m=2.):
         d = np.abs(data - np.median(data))

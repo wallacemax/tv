@@ -48,9 +48,6 @@ class OMFIT_shot_data:  ### (1)
         return bar
 
 
-        #return time_signal, signal, str(units), str(time_units)
-        #           X          Y        Yunit       Xunit
-
     def pickle_data(self, paramdata):
         var_name = str(paramdata[0])
         treename = str(paramdata[1])

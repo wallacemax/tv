@@ -2,6 +2,7 @@ __author__ = 'maxwallace'
 import sys
 import datetime
 import os
+import numpy
 
 # logfilename = '{}_Thomson.log'.format(datetime.datetime.isoformat(
 #             datetime.datetime.today()).split('.')[0].replace('-', '').replace(':', ''))
@@ -169,33 +170,35 @@ class tvMain():
 
     def createTimeGraphs(self):
 
-        IP = self.MDS_data['IP']
-        wmhd = self.MDS_data['WMHD']
+        topdatasource = [x[1] for x in self.shotData.iteritems() if x[1]['panelID'] == 4][0]
+        bottomdatasource = [x[1] for x in self.shotData.iteritems() if x[1]['panelID'] == 5][0]
 
         # bar = [time_signal, time_units, radial_signal, radial_units, signal, units]
 
-        maxscale = np.amax([np.amax(IP[0]), np.amax(wmhd[0])])
+        maxtimescale = np.amax([np.amax(topdatasource.data[0]), np.amax(bottomdatasource.data[0])])
 
         self.figure_a = Figure(figsize=(timegraphwidth,
                                         timegraphwidth * timegraphratio), dpi=defaultdpi, facecolor='white')
         self.ax_a = self.figure_a.add_subplot(2, 1, 1)
-        self.ax_a.set_ylabel(IP[5])
+        self.ax_a.set_ylabel(topdatasource['y_label'])
         #TODO: revisit IP Y scaling when appropriate
         self.ax_a.set_ylim([0, 1])
-        self.ax_a.set_xlim([0, maxscale])
+        self.ax_a.set_xlim([0, maxtimescale])
         self.ax_a.ticklabel_format(axis='y', style='sci', scilimits=(-2, 2))
-        self.ax_a.set_title(self.MDS_data_titles['IP'])
-        self.fig_a = self.ax_a.plot(IP[0], IP[4], marker='.', linestyle='None', markersize=12)
+        self.ax_a.set_title(topdatasource['label'])
+        self.fig_a = self.ax_a.plot(
+            topdatasource.data[0], topdatasource.data[4], marker='.', linestyle='None', markersize=12)
 
         self.ax_b = self.figure_a.add_subplot(2, 1, 2)
         self.ax_b.set_xlabel('Time [s]')
-        self.ax_b.set_ylabel(wmhd[5])
+        self.ax_b.set_ylabel(bottomdatasource['y_label'])
         #self.ax_b.set_ylim([0, self.roundtohundred(np.amax(wmhd[4]))])
         self.ax_a.set_ylim([0, 1])
-        self.ax_b.set_xlim([0, maxscale])
+        self.ax_b.set_xlim([0, maxtimescale])
         self.ax_b.ticklabel_format(axis='y', style='sci', scilimits=(-2, 2), )
-        self.ax_b.set_title(self.MDS_data_titles['WMHD'])
-        self.fig_b = self.ax_b.plot(wmhd[0], wmhd[4], marker='.', linestyle='None', markersize=12)
+        self.ax_b.set_title(bottomdatasource['label'])
+        self.fig_b = self.ax_b.plot(
+            bottomdatasource.data[0], bottomdatasource.data[4], marker='.', linestyle='None', markersize=12)
 
         self.figure_a.subplots_adjust(hspace=.7, bottom=0.13)
 
@@ -219,12 +222,12 @@ class tvMain():
         self.updateRadialGraphTime(selected_time)
 
     def updateTimeGraphKeypress(self, direction):
-        if self.selectedTimeIndex == -1 or len(self.MDS_data['TEF'][0]) <= self.selectedTimeIndex + direction:
+        if self.selectedTimeIndex == -1 or len(self.shotData['TEF'].data[0]) <= self.selectedTimeIndex + direction:
             selectedIndex = 0
         else:
             selectedIndex = self.selectedTimeIndex + direction
 
-        self.updateRadialGraphTime(self.MDS_data['TEF'][0][selectedIndex])
+        self.updateRadialGraphTime(self.shotData['TEF'].data[0][selectedIndex])
 
     def createRadialGraphs(self, selected_time):
 
@@ -260,40 +263,38 @@ class tvMain():
         self.framenumber = framenumber
         # logger.debug('Updating radial graphs for framenumber {} at time_difference {}'
         #              .format(framenumber, time_difference))
-        ne = self.MDS_data['NEF']
-        te = self.MDS_data['TEF']
-        pe = self.MDS_data['PEF']
+        ne = self.shotData['NEF']
+        te = self.shotData['TEF']
+        pe = self.shotData['PEF']
 
         # bar = [time_signal, time_units, radial_signal, radial_units, signal, units]
 
-        selectedTime = '{0:.0f}'.format((ne[0][framenumber]+time_difference)*1000) + 'ms'
-        self.displayedTime = '{0:.0f}'.format(ne[0][framenumber]*1000) + 'ms'
+        selectedTime = '{0:.0f}'.format((ne.data[0][framenumber]+time_difference)*1000) + 'ms'
+        self.displayedTime = '{0:.0f}'.format(ne.data[0][framenumber]*1000) + 'ms'
         displayedTimeDifference = '{0:.2f}'.format(time_difference*1000) + 'ms'
         self.figure_1.suptitle('$T_{TS}$' + ' = {}'.format(self.displayedTime) +
                                ', $\Delta T$={}'.format(displayedTimeDifference))
-        #self.figure_1.suptitle('Data displayed for {}, {} different'
-            # .format(displayedTime, displayedTimeDifference))  #3.1502ms
 
         self.ax1.clear()
-        self.ax1.plot(ne[2], ne[4][:, framenumber], marker='.', linestyle='None', c='red', markersize=12)
-        self.ax1.set_title(self.MDS_data_titles['NEF'])
+        self.ax1.plot(ne.data[2], [x[framenumber] for x in ne.data[4]], marker='.', linestyle='None', c='red', markersize=12)
+        self.ax1.set_title(ne['label'])
         setp(self.ax1.get_xticklabels(), visible=False)
-        self.ax1.set_ylabel(ne[5])
+        self.ax1.set_ylabel(ne['y_label'])
 
         self.ax1.yaxis.set_major_formatter(FuncFormatter(lambda x, pos: ('%.2f') % (x * 1e-20)))
         self.ax1.set_ylim([self.preferences['1ylabelmin'][1]*1e20, self.preferences['1ylabelmax'][1]*1e20])
 
         self.ax2.clear()
-        self.ax2.plot(te[2], te[4][:, framenumber], marker='s', linestyle='None', c='blue', markersize=12)
-        self.ax2.set_title(self.MDS_data_titles['TEF'])
+        self.ax2.plot(te.data[2], [x[framenumber] for x in te.data[4]], marker='s', linestyle='None', c='blue', markersize=12)
+        self.ax2.set_title(te['label'])
         setp(self.ax2.get_xticklabels(), visible=False)
-        self.ax2.set_ylabel(te[5])
+        self.ax2.set_ylabel(te['y_label'])
         self.ax2.set_ylim([self.preferences['2ylabelmin'][1], self.preferences['2ylabelmax'][1]])
 
         self.ax3.clear()
-        self.ax3.plot(pe[2], pe[4][:, framenumber], marker='^', linestyle='None', c='green', markersize=12)
-        self.ax3.set_title(self.MDS_data_titles['PEF'])
-        self.ax3.set_ylabel(pe[5])
+        self.ax3.plot(pe.data[2], [x[framenumber] for x in pe.data[4]], marker='^', linestyle='None', c='green', markersize=12)
+        self.ax3.set_title(pe['label'])
+        self.ax3.set_ylabel(pe['y_label'])
         self.ax3.set_ylim([self.preferences['3ylabelmin'][1], self.preferences['3ylabelmax'][1]])
 
         self.ax3.set_xlabel("Radius (cm)")
@@ -304,12 +305,12 @@ class tvMain():
 
     def updateRadialGraphTime(self, selected_time):
         try:
-            self.selectedTimeIndex = find_idx_nearest_value(self.MDS_data['TEF'][0], selected_time)
+            self.selectedTimeIndex = find_idx_nearest_value(self.shotData['TEF'].data[0], selected_time)
 
             # bar = [time_signal, time_units, radial_signal, radial_units, signal, units]
             # MPL MouseEvent: xy=(456,424) xydata=(0.796994851319,0.273058346212) button=None dblclick=False inaxes=Axes(0.125,0.614815;0.775x0.285185)
-            nearest_frame = find_idx_nearest_value(self.MDS_data['NEF'][0], selected_time)
-            nearest_time = self.MDS_data['NEF'][0][nearest_frame]
+            nearest_frame = find_idx_nearest_value(self.shotData['NEF'].data[0], selected_time)
+            nearest_time = self.shotData['NEF'].data[0][nearest_frame]
             timedelta = nearest_time - selected_time
 
             self.selectedTimeIndex = nearest_frame
@@ -317,9 +318,7 @@ class tvMain():
             self.updateRadialGraphs(nearest_frame, timedelta)
             pass
         except Exception as e:
-            self.update_text.set("An error was generated, and has been written to the log.")
-            # logger.error(e.message)
-            # logger.error(e.__doc__)
+            self.update_text.set("An error was generated, and has been captured.")
 
         self.update_text.set("Displayed closest Thomson data to {0:.2f}ms.".format(selected_time * 1000))
 
@@ -337,7 +336,7 @@ class tvMain():
 
     def rangeOnSelect(self, xmin, xmax):
 
-        rr = self.MDS_data['RR']
+        rr = self.RR
         indmin, indmax = np.searchsorted(rr, (xmin, xmax))
         indmax = min(self.radialgraphxmax, indmax)
 
@@ -360,6 +359,7 @@ class tvMain():
             self.get_data_object(self.shotnumber)
 
             if not self.data.does_shot_exist(self.shotnumber):
+                #TODO: add null shot picture here
                 self.update_text.set("Data traces not available in MDS for {}.".format(self.shotnumber))
                 return
 
@@ -373,28 +373,26 @@ class tvMain():
         except Exception as e:
             self.txtShotNumber['fg'] = "red"
             print(e)
-            self.update_text.set("An error has occurred, and has been written to the log.")
-            # logger.error(e.message)
-            # logger.error(e.__doc__)
-
-    def radialGraphCursor_moved(self):
-        pass
+            self.update_text.set("An error has occurred, and has been captured.")
 
     def get_graph_data(self, datacaption, framenumber):
         key = ''
-        for item in self.MDS_data_titles.items():
-            if item[1] == datacaption:
+        for item in self.shotData.items():
+            if item['label'] == datacaption:
                 key = item[0]
                 break
 
-        return self.MDS_data[key][1][framenumber]
+        #bar = [time_signal, time_units, radial_signal, radial_units, signal, units]
+        return self.shotData[key].data[4][framenumber]
 
     def populateGraphs(self, shotnumber):
         self.createTimeGraphs()
 
+        topdatasource = [x[1] for x in self.shotData.iteritems() if x[1]['panelID'] == 4][0]
+
         #bar = [time_signal, time_units, radial_signal, radial_units, signal, units]
-        maxindex = np.argmax(self.MDS_data['IP'][4])
-        max_ip_time = np.float64(self.MDS_data['IP'][0][maxindex])
+        maxindex = np.argmax(topdatasource.data[4])
+        max_ip_time = np.float64(topdatasource.data[0][maxindex])
         self.selectedTimeIndex = maxindex
 
         self.createRadialGraphs(max_ip_time)
@@ -569,24 +567,8 @@ class tvMain():
         return preffilename
 
     def loadDefaultDataSources(self):
-        self.MDS_data_nodes = [['NEF', 'ACTIVESPEC', 'MPTS.OUTPUT_DATA.BEST.FIT_NE'],
-                               ['PEF', 'ACTIVESPEC', 'MPTS.OUTPUT_DATA.BEST.FIT_PE'],
-                               ['TEF', 'ACTIVESPEC', 'MPTS.OUTPUT_DATA.BEST.FIT_TE'],
-                               ['IP', 'WF', 'IP'],
-                               ['WMHD', 'EFIT01', 'RESULTS.AEQDSK.WMHD']
-                               ]
-
-        self.MDS_data = {'NEF': Ellipsis,
-                         'PEF': Ellipsis,
-                         'TEF': Ellipsis,
-                         'IP': Ellipsis,
-                         'WMHD': Ellipsis}
-
-        self.MDS_data_titles = {'NEF': 'Electron Density',
-                                'PEF': 'Electron Pressure',
-                                'TEF': 'Electron Temperature',
-                                'IP': 'Plasma Current',
-                                'WMHD': 'Stored Energy'}
+        #TODO: implement single source vs personal data source configuration file
+        self.loadUserDataSources()
 
     def createDefaultDataSources(self):
 
@@ -596,7 +578,7 @@ class tvMain():
                                                    tree='ACTIVESPEC',
                                                    name='Electron Density',
                                                    units='$m^{-3}$',
-                                                   scaling=1,
+                                                   scaling=0,
                                                    label='Electron Density',
                                                    x_label='',
                                                    y_label='$n_e\;[10^{20}\;m^{-3}]$'),
@@ -605,7 +587,7 @@ class tvMain():
                                                tree='ACTIVESPEC',
                                                name='Electron Temperature',
                                                units='keV',
-                                               scaling=1,
+                                               scaling=0,
                                                label='Electron Temperature',
                                                x_label='',
                                                y_label='$T_e\;[kev]$'),
@@ -614,7 +596,7 @@ class tvMain():
                                                tree='ACTIVESPEC',
                                                name='Electron Pressure',
                                                units='kPa',
-                                               scaling=1,
+                                               scaling=0,
                                                label='Electron Pressure',
                                                x_label='',
                                                y_label='$P_e\;[kPa]$'),
@@ -665,45 +647,28 @@ class tvMain():
         # bar = [time_signal, time_units, radial_signal, radial_units, signal, units]
 
         # determine dimensions of machine from data set
-        self.MDS_data['RR'] = self.MDS_data['TEF'][2]
+        self.RR = self.shotData['TEF'].data[2]
 
         # cut data before first Thomson value and after last Thomson value - the rest of any other signal is unimportant
-        lastThomsonTime = np.amax(self.MDS_data['PEF'][0])
-        for l in [self.MDS_data['IP'], self.MDS_data['WMHD']]:
-            firstThomsonIndex = find_idx_nearest_value(l[0], 0)
-            lastThomsonIndex = find_idx_nearest_value(l[0], lastThomsonTime) + 1
+        #TODO: use 4th gradient to find last value in trace
+        lastThomsonTime = np.amax(self.shotData['PEF'].data[0])
+        for l in [val[1] for val in self.shotData.iteritems() if val[1]['panelID'] in [4, 5]]:
+            firstThomsonIndex = find_idx_nearest_value(l.data[0], 0)
+            lastThomsonIndex = find_idx_nearest_value(l.data[0], lastThomsonTime) + 1
             for foo in [0, 4]:
-                l[foo] = l[foo][firstThomsonIndex:lastThomsonIndex]
+                l.data[foo] = l.data[foo][firstThomsonIndex:lastThomsonIndex]
+
+        #and scale
+        for l in [val[1] for val in self.shotData.iteritems() if val[1]['scaling'] != 0]:
+            scalingfactor = int(str(l['scaling']).lower().replace('1e', ''))
+            l.data[4] = [x * pow(10, scalingfactor) for x in l.data[4]]
 
         # TODO: change max to amax
-        self.radialgraphxmax = self.MDS_data['NEF'][2].max()
-        self.radialgraphxmin = self.MDS_data['NEF'][2].min()
+        self.radialgraphxmax = self.RR.max()
+        self.radialgraphxmin = self.RR.min()
 
         self.radialmachinexmin = self.radialgraphxmin
         self.radialmachinexmax = self.radialgraphxmax
-
-        # change those labels
-        # TODO: put IP in MA
-        self.MDS_data['IP'][4] = [x / 1e3 for x in self.MDS_data['IP'][4]]
-        self.MDS_data['IP'][5] = '$I_P\;[MA]$'
-
-        # TODO: put NEF in m^-3 from cm^-3
-        self.MDS_data['NEF'][4] = \
-            np.array([[x * 1e6 for x in density] for density in \
-                      [[radial for radial in timestamp] for timestamp in self.MDS_data['NEF'][4]]]
-                     )
-        self.MDS_data['NEF'][5] = '$n_e\;[10^{20}\;m^{-3}]$'
-        self.MDS_data['TEF'][5] = '$T_e\;[keV]$'
-        self.MDS_data['PEF'][5] = '$P_e\;[kPa]$'
-
-        # WMHD J to kJ
-        self.MDS_data['WMHD'][4] = [x / 1e3 for x in self.MDS_data['WMHD'][4]]
-        self.MDS_data['WMHD'][5] = '$W_{MHD}\;[kJ]$'
-
-        # TODO: be clever and do in sigfigs
-        # IP A to kA
-        # self.MDS_data['IP'][4] = [x / 1000 for x in self.MDS_data['IP'][4]]
-        # self.MDS_data['IP'][5] = 'kA'
 
         updatestring = 'Massaged MDS data.'
         self.update_text.set(updatestring)
@@ -719,9 +684,9 @@ class tvMain():
 
     def load_data(self, shotnumber):
 
-        for foo in self.MDS_data_nodes:
-            self.MDS_data[foo[0]] = self.getData(foo[1], foo[2])
-            self.update_text.set('Retrieved data for {}'.format(foo[0]))
+        for foo in self.shotData.iteritems():
+            foo[1].data = self.data.get_tree_data(foo[1].server, foo[1]['tree'], foo[1]['tdi'])
+            self.update_text.set('Retrieved data for {}'.format(foo[1]['name']))
 
         self.update_text.set('Data loaded from tree for {}'.format(shotnumber))
 
