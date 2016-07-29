@@ -25,12 +25,11 @@ class DataSourcesDialog(Dialog):
         self.frame = master
 
         displayfont = {'family': 'Bitstream Vera Sans', 'size': self.preferences['font_size'][1]}
-        #panelID not displayed, b/c we don't want the user to set it here
-        datas = {'tdi': 'Tree Data Interface (from OMFIT)', 'tree': 'Tree Name', 'name': 'Trace Name',
+        datas = {'panelID': 'panelID', 'tdi': 'Tree Data Interface (from OMFIT)', 'tree': 'Tree Name', 'name': 'Trace Name',
                  'units': 'Units', 'scaling': 'Scaling Factor', 'label': 'Graph Label',
                  'x_label': 'X Dimension Label', 'y_label': 'Y Dimension Label'}
 
-        #install dropdown
+        #install data source dropdown
         self.dropdownkeys = [x['name'] for x in self.shotData.values()]
 
         self.selectedDataSource = StringVar(self.frame)
@@ -52,8 +51,9 @@ class DataSourcesDialog(Dialog):
 
         numberofrows = 1
         for key in sorted(datas, key=datas.__getitem__):
-            #okay, this is all weird now.
-
+            #so here we'll do panelID
+            if key == 'panelID':
+                continue
             Label(self.frame, text=datas[key], font=displayfont).grid(row=numberofrows, column=0)
             e = Entry(self.frame, font=displayfont, justify='center')
             e.grid(row=numberofrows, column=1)
@@ -62,9 +62,14 @@ class DataSourcesDialog(Dialog):
             numberofrows += 1
 
         Label(self.frame, text='Display in Panel', font=displayfont).grid(row=numberofrows, column=0)
-        self.panelDisplayState = StringVar(self.frame)
-        self.panelDisplayState.set('')
-        self.panelOption = OptionMenu(self.frame, self.panelDisplayState, '', 'top', 'bottom')
+        self.panelDisplayKeys = {'': 0, 'top': 4, 'bottom': 5}
+        self.selectedPanelSource = StringVar(self.frame)
+        self.selectedPanelSource.set('')
+
+        self.panelstate = StringVar(self.frame)
+        self.panelstate.set('normal')
+        self.panelOption = apply(OptionMenu, (self.frame, self.selectedPanelSource) + tuple(self.panelDisplayKeys))
+        self.panelOption.state = self.panelstate
         self.panelOption.grid(row=numberofrows, column=1)
         numberofrows += 1
 
@@ -79,8 +84,25 @@ class DataSourcesDialog(Dialog):
         #and refresh
         self.selectedDataSource.set(self.dropdownkeys[0])
 
+    def loadDataSource(self, *args):
+
+        thisData = [x for x in self.shotData.values() if x['name'] == self.selectedDataSource.get()][0]
+
+        #and fill
+        for key in self.entries:
+            self.entries[key].delete(0, END)
+            self.entries[key].insert(END, thisData[key])
+
+        if thisData['panelID'] in [4, 5]:
+            self.selectedPanelSource.set([key for key, val in
+                                          self.panelDisplayKeys.items() if val == thisData['panelID']][0])
+        else:
+            self.selectedPanelSource.set('')
+
+        self.updatemsg.set("Loaded {}".format(self.selectedDataSource.get()))
+
     def loadPreview(self):
-        #pull preview data, if ready
+        # pull preview data, if ready
 
         if (len(self.entries['tdi'].get()) == 0) and (len(self.entries['tree'].get()) == 0):
             return
@@ -97,11 +119,11 @@ class DataSourcesDialog(Dialog):
 
             xdata = MDSTracePreview[0]
             maxscale = np.amax(xdata)
-            #adjust
+            # adjust
             scalingfactor = pow(10, int(self.entries['scaling'].get().lower().replace('1e', '')))
             ydata = [x * scalingfactor for x in MDSTracePreview[4]]
 
-            #TODO: refactor and push this out to a generator
+            # TODO: refactor and push this out to a generator
             self.figure_prev = Figure(figsize=(6,
                                                6), dpi=100, facecolor='white')
 
@@ -126,25 +148,36 @@ class DataSourcesDialog(Dialog):
         except Exception as e:
             self.updatemsg.set('Unable to preview.  Please check TDI and tree name.')
 
-
-    def loadDataSource(self, *args):
-        thisData = [x for x in self.shotData.values() if x['name']==self.selectedDataSource.get()][0]
-        #and fill
-        for key in self.entries:
-            self.entries[key].delete(0, END)
-            self.entries[key].insert(END, thisData[key])
-
-        self.updatemsg.set("Loaded {}".format(self.selectedDataSource.get()))
-
     def validate(self):
-        #well, no required values, ergo, no validation.  wild.
+        ret = False
+        msg = ''
+
         # so let's at least see if this hot garbage is named
-        return (len(self.entries['name'].get()) > 0) or (self.addbuttontext.get() == 'Add...')
+        msg = 'Please check that this signal is named.'
+        ret = (len(self.entries['name'].get()) > 0) or (self.addbuttontext.get() == 'Add...')
+
+        #scaling factors all over 0
+        msg = 'Please check that the scaling factor is > 0'
+        ret = eval(self.entries['scaling'].get()) > 0
+
+        #y axis labeled
+        msg = 'Please check that a Y axis label is specified.'
+        ret = self.entries['y_label'].get() != ''
+
+        #there's a problem here in that the sources update individually, so a customer may be able to set
+        #two panels for the same position.  i don't wanna fix it right now.
+
+        if not ret:
+            self.updatemsg.set(msg)
+
+        return ret
 
     def apply(self):
         thisData = [x for x in self.shotData.values() if x['name'] == self.selectedDataSource.get()][0]
         for key, e in self.entries.iteritems():
             thisData.prop[key] = e.get()
+
+        thisData.prop['panelID'] = self.panelDisplayKeys[self.selectedPanelSource.get()]
 
     def refreshOption(self):
         self.dropdownkeys = [x['name'] for x in self.shotData.values()]
@@ -166,10 +199,9 @@ class DataSourcesDialog(Dialog):
             self.updatemsg.set('Adding new data source.')
         else:
             try:
-
                 #do a save routine here
                 if self.validate():
-                    newdata = mdst.MDSTrace(-1, '', '', '', '', '', '', '', '')
+                    newdata = mdst.MDSTrace(self.selectedPanelSource.get(), '', '', '', '', '', '', '', '')
                     for key, e in self.entries.iteritems():
                         newdata[key] = e.get()
                     self.shotData[uuid.uuid4().get_hex()] = newdata
