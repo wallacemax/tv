@@ -31,7 +31,7 @@ class mock_shot_data:  ### (1)
         return bar
 
     def does_shot_exist(self, shotid):
-        return shotid in ['130000', '205088']
+        return shotid in ['130000', '205088', '204062']
 
     def get_pickled(self, var):
         file = open('sample_data/' + str(self.shotid) + '_' + var + '.pk', 'rb')
