@@ -524,7 +524,7 @@ class tvMain():
             '2ylabelmin':['T_e Minimum', 0],
             '2ylabelmax':['T_e Maximum', 2],
             '3ylabelmin':['P_e Minimum', 0],
-            '3ylabelmax':['P_e Maximum', 2],
+            '3ylabelmax':['P_e Maximum', 7],
             'mainwindowheight':['', 760],
             'mainwindowwidth':['', 1268]}
 
