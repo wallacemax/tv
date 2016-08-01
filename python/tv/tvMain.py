@@ -40,28 +40,30 @@ from matplotlib.figure import Figure
 from matplotlib.widgets import MultiCursor
 from matplotlib.widgets import SpanSelector
 
+plotfont = {'family': 'Bitstream Vera Sans', 'size': 12}
+matplotlib.rc('font', **plotfont)
+
 import MDSTrace as mdstd
 
 from util import *
 import pickle
 
-defaultdpi = 100
-radialgraphwidth = 6.5
-radialgraphratio = 1
-timegraphwidth = 6
-timegraphratio = 1
-audittextsize=8
+DEFAULT_DPI = 100
+RADIAL_GRAPH_WIDTH = 6.5
+RADIAL_GRAPH_RATIO = 1
+TIME_GRAPH_WIDTH = 6
+TIME_GRAPH_RATIO = 1
+AUDIT_TEXT_SIZE=8
 
-treename = 'nstx'
-userid = os.getenv('LOGNAME')
-userpath = '~/{}/'.format(userid)
+TREE_NAME = 'nstx'
+USER_ID = os.getenv('LOGNAME')
+USER_PATH = '~/{}/'.format(USER_ID)
 
-include_csv = 0
+INCLUDE_CSV = 0
 
-plotfont = {'family': 'Bitstream Vera Sans', 'size': 12}
-matplotlib.rc('font', **plotfont)
+HEADER_LOGO_FILE_PATH = "NSTX-U_logo_thick_font_transparent.gif"
 
-headerlogofilepath = "NSTX-U_logo_thick_font_transparent.gif"
+APP_HOME_FOLDER = ''
 
 import PreferencesDialog
 import DataSourcesDialog
@@ -99,8 +101,8 @@ class tvMain():
 
     def InitUI(self):
 
-        self.displayFont = tkFont.Font(family='Bitstream Vera Sans', size=int(self.preferences['font_size'][1]))
-
+        #self.displayFont = tkFont.Font(family='Bitstream Vera Sans', size=int(self.preferences['font_size'][1]))
+        self.displayFont = tkFont.Font(family='Helvetica', size=int(self.preferences['font_size'][1]))
         self.drawShotHeader()
 
         self.drawFooter()
@@ -122,7 +124,7 @@ class tvMain():
         self.txtShotNumber.bind("b", lambda event: self.shotnumberInput())
         self.txtShotNumber.grid(row=0, column=1, sticky=tk.NSEW)
 
-        self.headerLogo = tk.PhotoImage(file=headerlogofilepath)
+        self.headerLogo = tk.PhotoImage(file=HEADER_LOGO_FILE_PATH)
         lblLogo = tk.Label(self.master, image=self.headerLogo)
         lblLogo.grid(row=0, column=1, sticky=tk.NSEW)
 
@@ -177,8 +179,8 @@ class tvMain():
 
         maxtimescale = np.amax([np.amax(topdatasource.data[0]), np.amax(bottomdatasource.data[0])])
 
-        self.figure_a = Figure(figsize=(timegraphwidth,
-                                        timegraphwidth * timegraphratio), dpi=defaultdpi, facecolor='white')
+        self.figure_a = Figure(figsize=(TIME_GRAPH_WIDTH,
+                                        TIME_GRAPH_WIDTH * TIME_GRAPH_RATIO), dpi=DEFAULT_DPI, facecolor='white')
         self.ax_a = self.figure_a.add_subplot(2, 1, 1)
         self.ax_a.set_ylabel(topdatasource['y_label'])
         #TODO: revisit IP Y scaling when appropriate
@@ -233,8 +235,8 @@ class tvMain():
 
         # pdb.set_trace()
 
-        self.figure_1 = Figure(figsize=(radialgraphwidth,
-                                        radialgraphwidth * radialgraphratio), dpi=defaultdpi, facecolor='white')
+        self.figure_1 = Figure(figsize=(RADIAL_GRAPH_WIDTH,
+                                        RADIAL_GRAPH_WIDTH * RADIAL_GRAPH_RATIO), dpi=DEFAULT_DPI, facecolor='white')
 
         self.ax1 = self.figure_1.add_subplot(3, 1, 1)
         self.ax2 = self.figure_1.add_subplot(3, 1, 2)
@@ -363,7 +365,7 @@ class tvMain():
                 self.update_text.set("Data traces not available in MDS for {}.".format(self.shotnumber))
                 return
 
-            self.update_text.set('Querying {} tree for {}'.format(treename, str(self.shotnumber)))
+            self.update_text.set('Querying {} tree for {}'.format(TREE_NAME, str(self.shotnumber)))
 
             self.load_data(self.shotnumber)
 
@@ -438,26 +440,26 @@ class tvMain():
         self.update_text.set(updatestring)
 
     def export_graph_image(self, file_type, graph, graphTitle, graphtime, shotnumber, timestamp):
-        directoryname = '~/u/{}/'.format(userid)
+        directoryname = '~/u/{}/'.format(USER_ID)
 
         #Shotnumber_yyyymmdd_hh24mmss_0798ms.ext
         fileName = '{}_{}_{}_{}.{}'.format(shotnumber, timestamp, graphTitle, graphtime, file_type).replace(' ', '')
 
         filetosave = fileName if not os.path.exists(directoryname) else directoryname + fileName
 
-        graph.savefig(filetosave, dpi=defaultdpi, format=file_type, bbox_inches='tight', frameon=None)
+        graph.savefig(filetosave, dpi=DEFAULT_DPI, format=file_type, bbox_inches='tight', frameon=None)
         return filetosave
 
     def add_graph_thumbprint(self, graph):
 
-        thumbprinttext = userid + ' ' + self.txtShotNumber.get()
+        thumbprinttext = USER_ID + ' ' + self.txtShotNumber.get()
 
-        graph.text(.95,.85, thumbprinttext,
+        graph.text(.95, .85, thumbprinttext,
                    horizontalalignment='right',
                    verticalalignment='center',
                    rotation='vertical',
                    transform=graph.transFigure,
-                   fontsize=audittextsize)
+                   fontsize=AUDIT_TEXT_SIZE)
 
     def export_csv_data(self, fileName, file_type, graph, graphTitle):
         if graphTitle == 'ThomsonData':
@@ -498,11 +500,11 @@ class tvMain():
             pickle.dump(self.preferences, f, pickle.HIGHEST_PROTOCOL)
 
     def getPreferencesFileName(self):
-        preffilename = '{}.pref'.format(userid)
+        preffilename = '{}.pref'.format(USER_ID)
 
         #are we on the cluster?  if so, look in *their* directory
-        if os.path.exists(userpath + preffilename):
-            preffilename = userpath + preffilename
+        if os.path.exists(USER_PATH + preffilename):
+            preffilename = USER_PATH + preffilename
 
         return preffilename
 
@@ -544,36 +546,46 @@ class tvMain():
 
         d = DataSourcesDialog.DataSourcesDialog(self.master, self.preferences, self.shotData, self.data)
         # after form
-        # TODO: global data source configuration thing here
+
         self.shotData = d.shotData
 
         d.destroy()
 
         self.saveUserDataSources()
 
+        if not (len(self.shotData) == len(self.default_shotData)):
+        # TODO: global data source configuration thing here
+                for newData in [x for x in self.shotData.iteritems() if x['TDI'] not in
+                                [y['TDI'] for y in self.default_shotData.iteritems()]]:
+                    self.default_shotData[newData[0]] = newData[1]
+
         self.update_text.set("Updated data sources.")
 
     def saveUserDataSources(self):
-        with open(self.getDataSourcesFileName(), 'wb') as f:
+        with open(self.getDataSourcesFileName()[1], 'wb') as f:
+            pickle.dump(self.shotData, f, pickle.HIGHEST_PROTOCOL)
+
+    def saveDefaultDataSources(self):
+        with open(self.getDataSourcesFileName()[0], 'wb') as f:
             pickle.dump(self.shotData, f, pickle.HIGHEST_PROTOCOL)
 
     def getDataSourcesFileName(self):
-        preffilename = '{}_data.pref'.format(userid)
+        #get the main data source file name, as used by all ThomsonViz customers
+        defaultdatasourcefilename = 'data_config.pref'
 
-        # are we on the cluster?  if so, look in *their* directory
-        if os.path.exists(userpath + preffilename):
-            preffilename = userpath + preffilename
+        userdatasourcefilename = '{}_data.pref'.format(USER_ID)
 
-        return preffilename
+        # are we on the cluster?  if so, look in *their* directory for user path and our directory for main
+        if os.path.exists(USER_PATH + userdatasourcefilename):
+            userdatasourcefilename = USER_PATH + userdatasourcefilename
+            defaultdatasourcefilename = APP_HOME_FOLDER + defaultdatasourcefilename
 
-    def loadDefaultDataSources(self):
-        #TODO: implement single source vs personal data source configuration file
-        self.loadUserDataSources()
+        return defaultdatasourcefilename, userdatasourcefilename
 
     def createDefaultDataSources(self):
 
         try:
-            self.shotData = {'NEF': mdstd.MDSTrace(panelID=1,
+            self.default_shotData = {'NEF': mdstd.MDSTrace(panelID=1,
                                                    TDI='MPTS.OUTPUT_DATA.BEST.FIT_NE',
                                                    tree='ACTIVESPEC',
                                                    name='Electron Density',
@@ -628,17 +640,37 @@ class tvMain():
                                                 x_label='',
                                                 y_label='$I_P\;[MA]$')
                              }
+            self.saveDefaultDataSources()
+            self.shotData = self.default_shotData
+
             self.saveUserDataSources()
         except Exception as e:
             self.update_text.set("An error occured while creating default data source preferences.")
 
-    def loadUserDataSources(self):
+    def loadDefaultDataSources(self):
         try:
-            with open(self.getDataSourcesFileName(), 'rb') as f:
-                self.shotData = pickle.load(f)
-                self.update_text.set('Loaded data sources.')
+            self.default_shotData = self.loadDataSources(self.getDataSourcesFileName()[0])
         except IOError:
             self.createDefaultDataSources()
+
+    def loadUserDataSources(self):
+        try:
+            self.shotData = self.loadDataSources(self.getDataSourcesFileName()[1])
+        except IOError:
+            self.shotData = self.loadDataSources(self.getDataSourcesFileName()[0])
+            self.saveUserDataSources()
+
+    def loadDataSources(self, filename):
+        data = ''
+        try:
+            with open(filename, 'rb') as f:
+                data = pickle.load(f)
+                self.update_text.set('Loaded data sources.')
+        except Exception as e:
+            self.update_text.set('An error occurred loading {}'.format(filename))
+
+
+        return data
 
     def tamper_with_data(self):
         # look.  we all do things we aren't proud of.
