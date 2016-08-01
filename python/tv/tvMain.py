@@ -555,9 +555,10 @@ class tvMain():
 
         if not (len(self.shotData) == len(self.default_shotData)):
         # TODO: global data source configuration thing here
-                for newData in [x for x in self.shotData.iteritems() if x['TDI'] not in
-                                [y['TDI'] for y in self.default_shotData.iteritems()]]:
+                for newData in [x for x in self.shotData.iteritems() if x[1]['tdi'] not in
+                                [y[1]['tdi'] for y in self.default_shotData.iteritems()]]:
                     self.default_shotData[newData[0]] = newData[1]
+                self.saveDefaultDataSources()
 
         self.update_text.set("Updated data sources.")
 
@@ -640,9 +641,10 @@ class tvMain():
                                                 x_label='',
                                                 y_label='$I_P\;[MA]$')
                              }
-            self.saveDefaultDataSources()
+
             self.shotData = self.default_shotData
 
+            self.saveDefaultDataSources()
             self.saveUserDataSources()
         except Exception as e:
             self.update_text.set("An error occured while creating default data source preferences.")
@@ -666,9 +668,9 @@ class tvMain():
             with open(filename, 'rb') as f:
                 data = pickle.load(f)
                 self.update_text.set('Loaded data sources.')
-        except Exception as e:
+        except IOError as e:
             self.update_text.set('An error occurred loading {}'.format(filename))
-
+            raise e
 
         return data
 

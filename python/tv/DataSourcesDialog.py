@@ -155,7 +155,7 @@ class DataSourcesDialog(Dialog):
 
         # so let's at least see if this hot garbage is named
         msg = 'Please check that this signal is named.'
-        ret = (len(self.entries['name'].get()) > 0) or (self.addbuttontext.get() == 'Add...')
+        ret = (len(self.entries['name'].get()) > 0)
 
         #scaling factors all over 0
         msg = 'Please check that the scaling factor is > 0'
@@ -164,6 +164,10 @@ class DataSourcesDialog(Dialog):
         #y axis labeled
         msg = 'Please check that a Y axis label is specified.'
         ret = self.entries['y_label'].get() != ''
+
+        #are we saving?  let's not, then.
+        msg = 'To save a new trace, click Save Changes up above.'
+        ret = (self.addbuttontext.get() == 'Add...')
 
         #there's a problem here in that the sources update individually, so a customer may be able to set
         #two panels for the same position.  i don't wanna fix it right now.
