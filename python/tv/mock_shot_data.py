@@ -19,6 +19,7 @@ class mock_shot_data:  ### (1)
              ['IP', 'WF', 'IP'],
              ['WMHD', 'EFIT01', 'RESULTS.AEQDSK.WMHD'],
              ['ENGIP', 'ENGINEERING', 'PPCC.PCS.RA.RA_AUC_IPL'],
+             ['BETAP', 'EFIT01', 'RESULTS.AEQDSK.BETAP']
              ]
 
         nodeid = ''

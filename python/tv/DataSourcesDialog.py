@@ -24,7 +24,8 @@ class DataSourcesDialog(Dialog):
 
         self.frame = master
 
-        displayfont = {'family': 'Bitstream Vera Sans', 'size': self.preferences['font_size'][1]}
+        #displayfont = {'family': 'Bitstream Vera Sans', 'size': self.preferences['font_size'][1]}
+        displayfont = {'family': 'Helvetica', 'size': self.preferences['font_size'][1]}
         datas = {'panelID': 'panelID', 'tdi': 'Tree Data Interface (from OMFIT)', 'tree': 'Tree Name', 'name': 'Trace Name',
                  'units': 'Units', 'scaling': 'Scaling Factor', 'label': 'Graph Label',
                  'x_label': 'X Dimension Label', 'y_label': 'Y Dimension Label'}
@@ -158,16 +159,12 @@ class DataSourcesDialog(Dialog):
         ret = (len(self.entries['name'].get()) > 0)
 
         #scaling factors all over 0
-        msg = 'Please check that the scaling factor is > 0'
-        ret = eval(self.entries['scaling'].get()) > 0
+        msg = 'Please check that the scaling factor is at least 0'
+        ret = eval(self.entries['scaling'].get()) >= 0
 
         #y axis labeled
         msg = 'Please check that a Y axis label is specified.'
         ret = self.entries['y_label'].get() != ''
-
-        #are we saving?  let's not, then.
-        msg = 'To save a new trace, click Save Changes up above.'
-        ret = (self.addbuttontext.get() == 'Add...')
 
         #there's a problem here in that the sources update individually, so a customer may be able to set
         #two panels for the same position.  i don't wanna fix it right now.
@@ -178,6 +175,10 @@ class DataSourcesDialog(Dialog):
         return ret
 
     def apply(self):
+
+        if self.addbuttontext.get().__contains__('Save'):
+            self.addButtonClicked()
+
         thisData = [x for x in self.shotData.values() if x['name'] == self.selectedDataSource.get()][0]
         for key, e in self.entries.iteritems():
             thisData.prop[key] = e.get()
@@ -206,7 +207,8 @@ class DataSourcesDialog(Dialog):
             try:
                 #do a save routine here
                 if self.validate():
-                    newdata = mdst.MDSTrace(self.selectedPanelSource.get(), '', '', '', '', '', '', '', '')
+                    panelID = self.panelDisplayKeys[self.selectedPanelSource.get()]
+                    newdata = mdst.MDSTrace(panelID, '', '', '', '', '', '', '', '')
                     for key, e in self.entries.iteritems():
                         newdata[key] = e.get()
                     self.shotData[uuid.uuid4().get_hex()] = newdata
@@ -217,4 +219,4 @@ class DataSourcesDialog(Dialog):
                 else:
                     self.updatemsg.set('Unable to create data source, please check inputs.')
             except Exception as e:
-                self.updatemsg.set('Unable to create new data source.')
+                self.updatemsg.set('Unable to create new data source. {}'.format(str(e)))

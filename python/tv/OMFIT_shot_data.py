@@ -71,7 +71,8 @@ class OMFIT_shot_data:  ### (1)
                 ['TEF', 'ACTIVESPEC', 'MPTS.OUTPUT_DATA.BEST.FIT_TE'],
                 ['IP', 'WF', 'IP'],
                 ['WMHD', 'EFIT01', 'RESULTS.AEQDSK.WMHD'],
-                ['ENGIP', 'ENGINEERING', 'PPCC.PCS.RA.RA_AUC_IPL']
+                ['ENGIP', 'ENGINEERING', 'PPCC.PCS.RA.RA_AUC_IPL'],
+                ['betap', 'EFIT01', 'RESULTS.AEQDSK.BETAP']
                 ]
 
         for fetchtag in tags:
