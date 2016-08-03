@@ -39,6 +39,7 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
 from matplotlib.widgets import MultiCursor
 from matplotlib.widgets import SpanSelector
+import matplotlib.image as mpimg
 
 plotfont = {'family': 'Bitstream Vera Sans', 'size': 12}
 matplotlib.rc('font', **plotfont)
@@ -62,6 +63,7 @@ USER_PATH = '~/{}/'.format(USER_ID)
 INCLUDE_CSV = 0
 
 HEADER_LOGO_FILE_PATH = "NSTX-U_logo_thick_font_transparent.gif"
+NO_DATA_IMAGE_NAME = "no_data.png"
 
 APP_HOME_FOLDER = ''
 
@@ -104,6 +106,9 @@ class tvMain():
         #self.displayFont = tkFont.Font(family='Bitstream Vera Sans', size=int(self.preferences['font_size'][1]))
         self.displayFont = tkFont.Font(family='Helvetica', size=int(self.preferences['font_size'][1]))
         self.drawShotHeader()
+
+        self.drawTimeGraphs()
+        self.drawRadialGraphs()
 
         self.drawFooter()
 
@@ -170,49 +175,62 @@ class tvMain():
 
         self.update_text.set("Drew footer.")
 
+    def getTimeDisplayDataSource(self, panelID):
+        try:
+            ret = [x[1] for x in self.shotData.iteritems() if x[1]['panelID'] == panelID][0]
+        except Exception as e:
+            ret = None
+
+        return ret
+
+    def drawTimeGraphs(self):
+        self.figure_a = Figure(figsize=(TIME_GRAPH_WIDTH,
+                                        TIME_GRAPH_WIDTH * TIME_GRAPH_RATIO), dpi=DEFAULT_DPI, facecolor='white')
+
     def createTimeGraphs(self):
 
-        topdatasource = [x[1] for x in self.shotData.iteritems() if x[1]['panelID'] == 4][0]
-        bottomdatasource = [x[1] for x in self.shotData.iteritems() if x[1]['panelID'] == 5][0]
+        #TODO: there's a bug when changing data panes.  the previous plot is not cleared.
+
+        self.figure_a.clf()
+        self.ax_a = self.figure_a.add_subplot(2, 1, 1)
+        self.ax_b = self.figure_a.add_subplot(2, 1, 2)
+        self.figure_a.subplots_adjust(hspace=.7, bottom=0.13)
+
+        topdatasource = self.getTimeDisplayDataSource(4)
+        bottomdatasource = self.getTimeDisplayDataSource(5)
+        maxtimescale = np.amax([np.amax(topdatasource.data[0]), np.amax(bottomdatasource.data[0])])
 
         # bar = [time_signal, time_units, radial_signal, radial_units, signal, units]
 
-        maxtimescale = np.amax([np.amax(topdatasource.data[0]), np.amax(bottomdatasource.data[0])])
+        foo = 0
+        for datasource in [topdatasource, bottomdatasource]:
+            if type(datasource) is None:
+                pass
+            else:
+                ax = self.ax_a if foo == 0 else self.ax_b
+                ax.set_ylabel(datasource['y_label'])
+                ax.set_ylim([0, 1])
+                ax.set_xlim([0, maxtimescale])
+                ax.ticklabel_format(axis='y', style='sci', scilimits=(-2, 2))
+                ax.set_title(datasource['label'])
+                ret = ax.plot(
+                    datasource.data[0], datasource.data[4], marker='.', linestyle='None', markersize=12)
 
-        self.figure_a = Figure(figsize=(TIME_GRAPH_WIDTH,
-                                        TIME_GRAPH_WIDTH * TIME_GRAPH_RATIO), dpi=DEFAULT_DPI, facecolor='white')
-        self.ax_a = self.figure_a.add_subplot(2, 1, 1)
-        self.ax_a.set_ylabel(topdatasource['y_label'])
-        #TODO: revisit IP Y scaling when appropriate
-        self.ax_a.set_ylim([0, 1])
-        self.ax_a.set_xlim([0, maxtimescale])
-        self.ax_a.ticklabel_format(axis='y', style='sci', scilimits=(-2, 2))
-        self.ax_a.set_title(topdatasource['label'])
-        self.fig_a = self.ax_a.plot(
-            topdatasource.data[0], topdatasource.data[4], marker='.', linestyle='None', markersize=12)
+            if foo == 0:
+                self.plotret_a = ret
+            else:
+                self.plotret_b = ret
 
-        self.ax_b = self.figure_a.add_subplot(2, 1, 2)
-        self.ax_b.set_xlabel('Time [s]')
-        self.ax_b.set_ylabel(bottomdatasource['y_label'])
-        #self.ax_b.set_ylim([0, self.roundtohundred(np.amax(wmhd[4]))])
-        self.ax_a.set_ylim([0, 1])
-        self.ax_b.set_xlim([0, maxtimescale])
-        self.ax_b.ticklabel_format(axis='y', style='sci', scilimits=(-2, 2), )
-        self.ax_b.set_title(bottomdatasource['label'])
-        self.fig_b = self.ax_b.plot(
-            bottomdatasource.data[0], bottomdatasource.data[4], marker='.', linestyle='None', markersize=12)
-
-        self.figure_a.subplots_adjust(hspace=.7, bottom=0.13)
+            foo += 1
 
         self.canvas_a = FigureCanvasTkAgg(self.figure_a, master=self.master)
+        self.canvas_a.show()
+        self.canvas_a.get_tk_widget().grid(row=2, column=1, sticky=tk.E + tk.W + tk.N + tk.S)
 
         self.multi = MultiCursor(self.canvas_a, (self.ax_a, self.ax_b), color='g', lw=2, horizOn=False, vertOn=True)
 
         self.canvas_a.mpl_connect('motion_notify_event', self.TimeGraphMove)
         self.canvas_a.mpl_connect('button_press_event', lambda event: self.canvas_a._tkcanvas.focus_set())
-
-        self.canvas_a.show()
-        self.canvas_a.get_tk_widget().grid(row=2, column=1, sticky=tk.E+tk.W+tk.N+tk.S)
 
     def TimeGraphMove(self, event):
 
@@ -231,20 +249,20 @@ class tvMain():
 
         self.updateRadialGraphTime(self.shotData['TEF'].data[0][selectedIndex])
 
-    def createRadialGraphs(self, selected_time):
-
-        # pdb.set_trace()
-
+    def drawRadialGraphs(self):
         self.figure_1 = Figure(figsize=(RADIAL_GRAPH_WIDTH,
                                         RADIAL_GRAPH_WIDTH * RADIAL_GRAPH_RATIO), dpi=DEFAULT_DPI, facecolor='white')
-
-        self.ax1 = self.figure_1.add_subplot(3, 1, 1)
-        self.ax2 = self.figure_1.add_subplot(3, 1, 2)
-        self.ax3 = self.figure_1.add_subplot(3, 1, 3)
 
         self.figure_1.subplots_adjust(hspace=.25)
 
         self.canvas_1 = FigureCanvasTkAgg(self.figure_1, master=self.master)
+        self.canvas_1.get_tk_widget().grid(row=2, column=0, sticky=tk.W + tk.E + tk.N + tk.S)
+
+    def createRadialGraphs(self, selected_time):
+
+        self.ax1 = self.figure_1.add_subplot(3, 1, 1)
+        self.ax2 = self.figure_1.add_subplot(3, 1, 2)
+        self.ax3 = self.figure_1.add_subplot(3, 1, 3)
 
         self.span1 = SpanSelector(self.ax1, self.rangeOnSelect, 'horizontal', useblit=True,
                                   rectprops=dict(alpha=0.5, facecolor='red'))
@@ -254,9 +272,6 @@ class tvMain():
                                   rectprops=dict(alpha=0.5, facecolor='red'))
 
         self.updateRadialGraphTime(selected_time)
-
-        self.canvas_1.show()
-        self.canvas_1.get_tk_widget().grid(row=2, column=0, sticky=tk.W + tk.E + tk.N + tk.S)
 
         self.update_text.set("Created radial plots.")
 
@@ -303,6 +318,7 @@ class tvMain():
 
         self.changeRadialRange(self.preferences['radialgraphxmin'][1], self.preferences['radialgraphxmax'][1])
 
+        self.canvas_1.show()
         self.canvas_1.draw()
 
     def updateRadialGraphTime(self, selected_time):
@@ -360,10 +376,9 @@ class tvMain():
 
             self.get_data_object(self.shotnumber)
 
-            if not self.data.does_shot_exist(self.shotnumber):
-                #TODO: add null shot picture here
-                self.update_text.set("Data traces not available in MDS for {}.".format(self.shotnumber))
-                return
+            # if not self.data.does_shot_exist(self.shotnumber):
+            #     #TODO: add null shot picture here
+            #     self.update_text.set("Data traces not available in MDS for {}.".format(self.shotnumber))
 
             self.update_text.set('Querying {} tree for {}'.format(TREE_NAME, str(self.shotnumber)))
 
@@ -680,29 +695,41 @@ class tvMain():
 
         # bar = [time_signal, time_units, radial_signal, radial_units, signal, units]
 
-        # determine dimensions of machine from data set
-        self.RR = self.shotData['TEF'].data[2]
+        # determine dimensions of machine from data set later
+        self.radialgraphxmin, self.radialgraphxmax = 0, 1
+        self.radialmachinexmin, self.radialmachinexmax = 0, 1
 
-        # cut data before first Thomson value and after last Thomson value - the rest of any other signal is unimportant
-        #TODO: use 4th gradient to find last value in trace
-        lastThomsonTime = np.amax(self.shotData['PEF'].data[0])
-        for l in [val[1] for val in self.shotData.iteritems() if val[1]['panelID'] in [4, 5]]:
-            firstThomsonIndex = find_idx_nearest_value(l.data[0], 0)
-            lastThomsonIndex = find_idx_nearest_value(l.data[0], lastThomsonTime) + 1
-            for foo in [0, 4]:
-                l.data[foo] = l.data[foo][firstThomsonIndex:lastThomsonIndex]
+        #del self.shotData['TEF']
+        #del self.shotData['ENGIP']
 
-        #and scale
-        for l in [val[1] for val in self.shotData.iteritems() if val[1]['scaling'] != 0]:
+        if (self.shotData['TEF'].data == None or
+                self.shotData['NEF'].data == None or
+                self.shotData['PEF'].data == None):
+            # TODO: use 4th gradient to find last value in trace
+            # HACK: amin is a terrible choice here
+            endofshottime = \
+                np.amin([np.amax(val[1].data[0]) for val in self.shotData.iteritems() if val[1]['panelID'] in [4, 5]])
+        else:
+            # no thomson data
+            endofshottime = np.amax(self.shotData['PEF'].data[0])
+            self.RR = self.shotData['TEF'].data[2]
+            self.radialgraphxmax = self.RR.max()
+            self.radialgraphxmin = self.RR.min()
+
+            self.radialmachinexmin = self.radialgraphxmin
+            self.radialmachinexmax = self.radialgraphxmax
+
+        # scale data
+        for l in [val[1] for val in self.shotData.iteritems() if val[1]['scaling'] != 0 and val[1]['data'] != '']:
             scalingfactor = int(str(l['scaling']).lower().replace('1e', ''))
             l.data[4] = [x * pow(10, scalingfactor) for x in l.data[4]]
 
-        # TODO: change max to amax
-        self.radialgraphxmax = self.RR.max()
-        self.radialgraphxmin = self.RR.min()
-
-        self.radialmachinexmin = self.radialgraphxmin
-        self.radialmachinexmax = self.radialgraphxmax
+        # cut data before first Thomson value and after last Thomson value - the rest of any other signal is unimportant
+        for l in [val[1] for val in self.shotData.iteritems() if val[1]['panelID'] in [4, 5] and val[1]['data'] != '']:
+            firstThomsonIndex = find_idx_nearest_value(l.data[0], 0)
+            lastThomsonIndex = find_idx_nearest_value(l.data[0], endofshottime) + 1
+            for foo in [0, 4]:
+                l.data[foo] = l.data[foo][firstThomsonIndex:lastThomsonIndex]
 
         updatestring = 'Massaged MDS data.'
         self.update_text.set(updatestring)
@@ -719,8 +746,12 @@ class tvMain():
     def load_data(self, shotnumber):
 
         for foo in self.shotData.iteritems():
-            foo[1].data = self.data.get_tree_data(foo[1].server, foo[1]['tree'], foo[1]['tdi'])
-            self.update_text.set('Retrieved data for {}'.format(foo[1]['name']))
+            try:
+                foo[1].data = self.data.get_tree_data(foo[1].server, foo[1]['tree'], foo[1]['tdi'])
+                self.update_text.set('Retrieved data for {}'.format(foo[1]['name']))
+
+            except Exception as e:
+                self.update_text.set('No data available for {}'.format(foo[1]['name']))
 
         self.update_text.set('Data loaded from tree for {}'.format(shotnumber))
 
