@@ -14,11 +14,9 @@ USE_MOCK_DATA = sys.platform == 'darwin'
 if USE_MOCK_DATA:
     #running on macosx i.e., locally on a laptop, use mock
     import mock_shot_data as OMFITdata
-    demoshotnumber = 204062
 else:
     #running on the server, run full DAL
     import OMFIT_shot_data as OMFITdata
-    demoshotnumber = 204062
 
 try:
     # for Python2
@@ -58,7 +56,9 @@ AUDIT_TEXT_SIZE=8
 
 TREE_NAME = 'nstx'
 USER_ID = os.getenv('LOGNAME')
-USER_PATH = '~/{}/'.format(USER_ID)
+#USER_PATH = '~/{}/'.format(USER_ID)
+USER_PATH = '/u/{}/'.format(os.getenv('USER'))
+print(USER_PATH)
 
 INCLUDE_CSV = 0
 
@@ -124,7 +124,6 @@ class tvMain():
         self.lblShot.grid(row=0, column=0, sticky=tk.NSEW)
 
         self.txtShotNumber = tk.Entry(self.entryFrame, width=12, fg='red', justify='center', font=self.displayFont)
-        self.txtShotNumber.insert(0, demoshotnumber)
         self.txtShotNumber.bind("<Return>", lambda event: self.shotnumberInput())
         self.txtShotNumber.bind("b", lambda event: self.shotnumberInput())
         self.txtShotNumber.grid(row=0, column=1, sticky=tk.NSEW)
@@ -376,9 +375,8 @@ class tvMain():
 
             self.get_data_object(self.shotnumber)
 
-            # if not self.data.does_shot_exist(self.shotnumber):
-            #     #TODO: add null shot picture here
-            #     self.update_text.set("Data traces not available in MDS for {}.".format(self.shotnumber))
+            if not self.data.does_shot_exist(self.shotnumber):#TODO: add null shot picture here
+                self.update_text.set("Data traces not available in MDS for {}.".format(self.shotnumber))
 
             self.update_text.set('Querying {} tree for {}'.format(TREE_NAME, str(self.shotnumber)))
 
@@ -649,9 +647,9 @@ class tvMain():
                          'ENGIP': mdstd.MDSTrace(panelID=5,
                                                 TDI='PPCC.PCS.RA.RA_AUC_IPL',
                                                 tree='ENGINEERING',
-                                                name='ENGIP',
+                                                name='I_P (Engineering)',
                                                 units='MA',
-                                                scaling='1e-3',
+                                                scaling='1e-6',
                                                 label='Plasma Current (Engineering)',
                                                 x_label='',
                                                 y_label='$I_P\;[MA]$')

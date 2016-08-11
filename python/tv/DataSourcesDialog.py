@@ -63,7 +63,7 @@ class DataSourcesDialog(Dialog):
             numberofrows += 1
 
         Label(self.frame, text='Display in Panel', font=displayfont).grid(row=numberofrows, column=0)
-        self.panelDisplayKeys = {'': 0, 'top': 4, 'bottom': 5}
+        self.panelDisplayKeys = {'none': 0, 'top': 4, 'bottom': 5}
         self.selectedPanelSource = StringVar(self.frame)
         self.selectedPanelSource.set('')
 
@@ -150,7 +150,7 @@ class DataSourcesDialog(Dialog):
         except Exception as e:
             self.updatemsg.set('Unable to preview.  Please check TDI and tree name.')
 
-    def validate(self):
+    def validate(self, skipsavechangescheck=False):
         ret = False
         msg = ''
 
@@ -166,6 +166,10 @@ class DataSourcesDialog(Dialog):
         msg = 'Please check that a Y axis label is specified.'
         ret = self.entries['y_label'].get() != ''
 
+        if not skipsavechangescheck:
+            msg = "Click 'Save Changes' to save this trace."
+            ret = not self.addbuttontext.get().__contains__('Save')
+
         #there's a problem here in that the sources update individually, so a customer may be able to set
         #two panels for the same position.  i don't wanna fix it right now.
 
@@ -175,14 +179,9 @@ class DataSourcesDialog(Dialog):
         return ret
 
     def apply(self):
-
-        if self.addbuttontext.get().__contains__('Save'):
-            self.addButtonClicked()
-
         thisData = [x for x in self.shotData.values() if x['name'] == self.selectedDataSource.get()][0]
         for key, e in self.entries.iteritems():
             thisData.prop[key] = e.get()
-
         thisData.prop['panelID'] = self.panelDisplayKeys[self.selectedPanelSource.get()]
 
     def refreshOption(self):
@@ -200,13 +199,14 @@ class DataSourcesDialog(Dialog):
         if self.addbuttontext.get() == 'Add...':
             for key, e in self.entries.iteritems():
                 e.delete(0, END)
+            self.selectedPanelSource.set('none')
             self.optionstate.set('disabled')
             self.addbuttontext.set('Save Changes')
             self.updatemsg.set('Adding new data source.')
         else:
             try:
                 #do a save routine here
-                if self.validate():
+                if self.validate(skipsavechangescheck=True):
                     panelID = self.panelDisplayKeys[self.selectedPanelSource.get()]
                     newdata = mdst.MDSTrace(panelID, '', '', '', '', '', '', '', '')
                     for key, e in self.entries.iteritems():
