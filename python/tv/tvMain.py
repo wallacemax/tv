@@ -163,7 +163,7 @@ class tvMain():
         self.lblOutput = tk.Label(self.master, textvariable=self.update_text, font=self.displayFont)
         self.lblOutput.grid(row=3, column=1, sticky=tk.NSEW)
 
-        btnPreferences = tk.Button(text="Preferences...", command=lambda: self.showPreferences(),
+        btnPreferences = tk.Button(text="Thomson Preferences...", command=lambda: self.showPreferences(),
                             font = self.displayFont)
         btnPreferences.grid(row=4, column=0, sticky=tk.NS + tk.E)
 
@@ -574,6 +574,8 @@ class tvMain():
                 self.saveDefaultDataSources()
 
         self.update_text.set("Updated data sources.")
+
+        self.shotnumberInput()
 
     def saveUserDataSources(self):
         with open(self.getDataSourcesFileName()[1], 'wb') as f:

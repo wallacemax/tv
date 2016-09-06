@@ -179,6 +179,11 @@ class DataSourcesDialog(Dialog):
         return ret
 
     def apply(self):
+        # the value of this panel changed, find the old value panel that had this id and blank it out
+        panel = self.panelDisplayKeys[self.selectedPanelSource.get()]
+        for p in [x for x in [y for y in self.shotData.iteritems() if y[1]['panelID'] == panel]]:
+            p[1]['panelID'] = 0
+
         thisData = [x for x in self.shotData.values() if x['name'] == self.selectedDataSource.get()][0]
         for key, e in self.entries.iteritems():
             thisData.prop[key] = e.get()
